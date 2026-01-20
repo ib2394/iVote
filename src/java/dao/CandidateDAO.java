@@ -5,7 +5,7 @@
  */
 package dao;
 
-import com.java.bean.Candidate;
+import bean.Candidate;
 import util.DBConnection;
 import java.sql.*;
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ public class CandidateDAO {
                       "GROUP BY c.candidate_id " +
                       "ORDER BY vote_count DESC";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             
@@ -48,7 +48,7 @@ public class CandidateDAO {
         String query = "INSERT INTO Candidates (candidate_name, email, program, faculty, description, photo_url) " +
                       "VALUES (?, ?, ?, ?, ?, ?)";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             
             pstmt.setString(1, candidate.getCandidateName());
@@ -70,7 +70,7 @@ public class CandidateDAO {
         String query = "UPDATE Candidates SET candidate_name = ?, email = ?, program = ?, " +
                       "faculty = ?, description = ?, photo_url = ? WHERE candidate_id = ?";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             
             pstmt.setString(1, candidate.getCandidateName());
@@ -92,7 +92,7 @@ public class CandidateDAO {
     public boolean deleteCandidate(int candidateId) {
         String query = "DELETE FROM Candidates WHERE candidate_id = ?";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             
             pstmt.setInt(1, candidateId);
@@ -108,7 +108,7 @@ public class CandidateDAO {
         Candidate candidate = null;
         String query = "SELECT * FROM Candidates WHERE candidate_id = ?";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             
             pstmt.setInt(1, candidateId);

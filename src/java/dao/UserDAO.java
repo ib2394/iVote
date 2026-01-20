@@ -17,7 +17,7 @@ public class UserDAO {
         User user = null;
         String query = "SELECT * FROM Users WHERE email = ? AND password = ?";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             
             pstmt.setString(1, email);
@@ -44,7 +44,7 @@ public class UserDAO {
     public boolean registerUser(User user) {
         String query = "INSERT INTO Users (full_name, email, faculty, password, role) VALUES (?, ?, ?, ?, ?)";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             
             pstmt.setString(1, user.getFullName());
@@ -64,7 +64,7 @@ public class UserDAO {
     public boolean updateVoteStatus(int userId) {
         String query = "UPDATE Users SET has_voted = TRUE WHERE user_id = ?";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             
             pstmt.setInt(1, userId);

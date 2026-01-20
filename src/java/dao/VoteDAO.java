@@ -5,9 +5,11 @@
  */
 package dao;
 
+import bean.Candidate;
 import com.java.bean.Vote;
 import util.DBConnection;
 import java.sql.*;
+import java.util.List;
 
 public class VoteDAO {
     
@@ -19,7 +21,7 @@ public class VoteDAO {
         
         String query = "INSERT INTO Votes (voter_id, candidate_id, ip_address) VALUES (?, ?, ?)";
         
-        try (Connection conn = DBConnection.getConnection()) {
+        try (Connection conn = DBConnection.createConnection()) {
             // Start transaction
             conn.setAutoCommit(false);
             
@@ -50,7 +52,7 @@ public class VoteDAO {
     public boolean hasVoted(int voterId) {
         String query = "SELECT COUNT(*) FROM Votes WHERE voter_id = ?";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             
             pstmt.setInt(1, voterId);
@@ -68,7 +70,7 @@ public class VoteDAO {
     public int getTotalVotes() {
         String query = "SELECT COUNT(*) FROM Votes";
         
-        try (Connection conn = DBConnection.getConnection();
+        try (Connection conn = DBConnection.createConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             
