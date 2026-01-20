@@ -5,43 +5,33 @@ To change this template file, choose Tools | Templates
 and open the template in the editor.
 -->
 <html>
-<head>
-    <title>Voting Result</title>
+    <head>
+        <title>Election Results</title>
+        <style>
+            .bar {
+                background-color: #4CAF50;
+                height: 20px;
+                margin: 5px 0;
+            }
+            .label {
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>Election Results</h2
+        <ul
+            <li>
+                <span class="label"></span> — 
 
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-        
-        google.charts.load('current', {'packages':['corechart']});
+                <div class="bar" style="width:"></div>
+            </li>
+        </ul>
+        <p><strong>Total Votes:</strong> </p>
 
-        google.charts.setOnLoadCallback(drawChart);
+        <p>No results available.</p>
 
-        function drawChart() {
 
-            var data = google.visualization.arrayToDataTable([
-                ['Candidate', 'Votes'],
-                ['MUHAMMAD FAKRUL', 45],
-                ['SITI NUR AISYAH', 30],
-                ['IMAN YUSUF', 15],
-                ['WARA SOFEA', 10]
-            ]);
-
-            var options = {
-                width: 700,
-                height: 600
-            };
-
-            var chart = new google.visualization.PieChart(document.getElementById('piechart'));
-            chart.draw(data, options);
-        }
-    </script>
-
-</head>
-
-<body>
-
-    <h1 style="text-align:center;">VOTING RESULT SUMMARY</h1>
-    <div id="piechart" style="margin:auto; width:600px; height:400px;"></div>
-    <button onclick="window.print()">Print Page</button>
-
-</body>
+        <a href="homepage.html">Back to Home page</a>
+    </body>
 </html>

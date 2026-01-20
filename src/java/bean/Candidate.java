@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.java.bean;
+package bean;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -19,6 +19,7 @@ public class Candidate implements Serializable {
     private String photoUrl;
     private Timestamp nominationDate;
     private int voteCount;
+    private double percentage;
     
     // Constructors
     public Candidate() {}
@@ -61,4 +62,8 @@ public class Candidate implements Serializable {
     
     public int getVoteCount() { return voteCount; }
     public void setVoteCount(int voteCount) { this.voteCount = voteCount; }
+
+    public double getPercentage() { return percentage; }
+    public void setPercentage(double percentage) { this.percentage = percentage; }
+
 }
