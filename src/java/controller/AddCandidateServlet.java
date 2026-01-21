@@ -5,22 +5,13 @@
  */
 package controller;
 
-import bean.Candidate;
-import dao.CandidateDAO;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.MultipartConfig;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.Part;
+import bean.*;
+import dao.*;
+import java.io.*;
+import java.nio.*;
+import javax.servlet.*;
+import javax.servlet.annotation.*;
+import javax.servlet.http.*;
 
 @MultipartConfig(
     fileSizeThreshold = 1024 * 1024 * 2, // 2MB
@@ -29,7 +20,7 @@ import javax.servlet.http.Part;
 )
 public class AddCandidateServlet extends HttpServlet {
     
-    private static final String UPLOAD_DIR = "candidate_images";
+    private static final String UPLOAD_DIR = "photoUrl";
     
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -39,7 +30,7 @@ public class AddCandidateServlet extends HttpServlet {
         // Check if admin is logged in
         String adminID = (String) session.getAttribute("adminID");
         if (adminID == null) {
-            response.sendRedirect("adminLogin.jsp");
+            response.sendRedirect("login.jsp");
             return;
         }
         
@@ -48,7 +39,7 @@ public class AddCandidateServlet extends HttpServlet {
         String email = request.getParameter("email");
         String program = request.getParameter("program");
         String faculty = request.getParameter("faculty");
-        String desc = request.getParameter("desc");
+        String description = request.getParameter("description");
         
         // Handle file upload for candidate picture
         String photoUrl = null;
@@ -85,7 +76,7 @@ public class AddCandidateServlet extends HttpServlet {
         if (candidateName == null || candidateName.trim().isEmpty() ||
             email == null || email.trim().isEmpty() ||
             faculty == null || faculty.trim().isEmpty() ||
-            desc == null || desc.trim().isEmpty()) {
+            description == null || description.trim().isEmpty()) {
             
             session.setAttribute("errorMessage", "Please fill in all required fields!");
             response.sendRedirect("addCandidate.jsp");
@@ -106,7 +97,7 @@ public class AddCandidateServlet extends HttpServlet {
         candidate.setPhotoUrl(photoUrl);
         candidate.setProgram(program != null ? program.trim() : "");
         candidate.setFaculty(faculty.trim());
-        candidate.setDescription(desc.trim());
+        candidate.setDescription(description.trim());
         //candidate.setAdminID(adminID);
         
         // Create CandidateDao object
@@ -119,12 +110,8 @@ public class AddCandidateServlet extends HttpServlet {
         if ("SUCCESS".equals(result)) {
             session.setAttribute("successMessage", "Candidate '" + candidateName + "' added successfully!");
             
-            // Option 1: Redirect to admin dashboard
             response.sendRedirect("adminDashboard.jsp");
-            
-            // Option 2: If you want to stay on addCandidate.jsp with success message
-            // RequestDispatcher dispatcher = request.getRequestDispatcher("addCandidate.jsp");
-            // dispatcher.forward(request, response);
+            ;
             
         } else {
             session.setAttribute("errorMessage", "Failed to add candidate. " + result);
@@ -147,7 +134,6 @@ public class AddCandidateServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Redirect GET requests to addCandidate.jsp
         response.sendRedirect("addCandidate.jsp");
     }
 }
