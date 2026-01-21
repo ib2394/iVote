@@ -4,23 +4,91 @@
     Author     : USER
 --%>
 
-<%@page import="com.java.bean.Candidate"%>
+<%@page import="bean.Users"%>
+<%@page import="bean.Election"%>
+<%@page import="bean.Position"%>
+<%@page import="bean.CandidateView"%>
+<%@page import="dao.UserDAO" %>
+<%@page import="dao.ElectionDAO" %>
+<%@page import="dao.PositionDAO" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="dao.CandidateDAO" %>
-<%@page import="bean.Candidate" %>
+<%@page import="dao.VoteDAO" %>
 <%@page import="java.util.List" %>
+<%@page import="java.util.Map" %>
+<%@page import="java.util.HashMap" %>
+<%@page import="java.util.ArrayList" %>
+<%@page import="java.util.Collections" %>
+<%@page import="java.time.LocalDate" %>
+<%@page import="java.time.temporal.ChronoUnit" %>
 <%
-    // Check if admin is logged in
-    String adminID = (String) session.getAttribute("adminID");
-    if (adminID == null) {
-        response.sendRedirect("adminLogin.jsp");
-        return;
+    Users currentUser = (Users) session.getAttribute("user");
+    String legacyRole = (String) session.getAttribute("role"); // from friend's login.jsp (admin/student/lecturer)
+    String legacyUserName = (String) session.getAttribute("userName");
+
+    // Accept either new auth (Users in session) OR legacy auth (role string in session)
+    if (currentUser == null) {
+        if (legacyRole == null || !"admin".equalsIgnoreCase(legacyRole)) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+    } else {
+        if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
     }
-    
-    // Get candidates from database
+
+    ElectionDAO electionDAO = new ElectionDAO();
+    PositionDAO positionDAO = new PositionDAO();
     CandidateDAO candidateDAO = new CandidateDAO();
-    List<Candidate> candidates = candidateDAO.getAllCandidates();
+    UserDAO userDAO = new UserDAO();
+    // If we came from legacy login and the legacy "userName" is actually an email, try to hydrate Users for display/use
+    if (currentUser == null && legacyUserName != null && legacyUserName.indexOf("@") > 0) {
+        Users maybe = userDAO.getUserByEmail(legacyUserName);
+        if (maybe != null) {
+            currentUser = maybe;
+            session.setAttribute("user", currentUser);
+        }
+    }
+    VoteDAO voteDAO = new VoteDAO();
+
+    Election activeElection = electionDAO.getActiveElection();
     int totalCandidates = candidateDAO.getTotalCandidates();
+    int totalVotes = activeElection != null
+            ? voteDAO.getTotalVotesByElection(activeElection.getElection_id())
+            : voteDAO.getTotalVotes();
+    int totalStudents = userDAO.countByRole("STUDENT");
+    int turnout = voteDAO.getVoterTurnout(totalStudents);
+
+    List<Position> positions = null;
+    if (activeElection != null) {
+        positions = positionDAO.getPositionsByElection(activeElection.getElection_id());
+    } else {
+        positions = new ArrayList<Position>();
+    }
+    Map<Integer, List<CandidateView>> candidatesByPosition = new HashMap<Integer, List<CandidateView>>();
+    if (activeElection != null) {
+        List<CandidateView> candidateViews = candidateDAO.getCandidateViewsByElection(activeElection.getElection_id());
+        for (CandidateView view : candidateViews) {
+            if (!candidatesByPosition.containsKey(view.getPositionId())) {
+                candidatesByPosition.put(view.getPositionId(), new ArrayList<CandidateView>());
+            }
+            candidatesByPosition.get(view.getPositionId()).add(view);
+        }
+    }
+
+    String timeRemaining = "--";
+    if (activeElection != null && activeElection.getEnd_date() != null) {
+        LocalDate today = LocalDate.now();
+        LocalDate end = activeElection.getEnd_date().toLocalDate();
+        long days = ChronoUnit.DAYS.between(today, end);
+        if (days >= 0) {
+            timeRemaining = days + " day(s)";
+        } else {
+            timeRemaining = "Ended";
+        }
+    }
 %>
 <!DOCTYPE html>
 <html>
@@ -41,7 +109,7 @@
                     <i class="fas fa-user-shield"></i> Admin Panel
                 </h1>
                 <p style="margin: 5px 0 0 0; font-size: 0.9rem; opacity: 0.9;">
-                    Logged in as: <%= session.getAttribute("adminName") != null ? session.getAttribute("adminName") : "Administrator" %>
+                    Logged in as: <%= currentUser != null ? currentUser.getUser_name() : (legacyUserName != null ? legacyUserName : "Administrator") %>
                 </p>
             </div>
             <button class="logout-btn" onclick="logout()">
@@ -62,33 +130,28 @@
                     <div class="card-icon"><i class="fas fa-users"></i></div>
                     <div class="stats"><%= totalCandidates %></div>
                     <h3 class="card-title">Total Candidates</h3>
-                    <p class="card-subtitle">Across all faculties</p>
+                    <p class="card-subtitle">Across all elections</p>
                 </div>
                 
                 <div class="dashboard-card">
                     <div class="card-icon"><i class="fas fa-vote-yea"></i></div>
-                    <div class="stats">
-                        <% 
-                            // You can add vote counting logic here
-                            out.print("0"); // Placeholder
-                        %>
-                    </div>
+                    <div class="stats"><%= totalVotes %></div>
                     <h3 class="card-title">Total Votes</h3>
-                    <p class="card-subtitle">Cast by students</p>
+                    <p class="card-subtitle"><%= activeElection != null ? "Active election only" : "All time" %></p>
                 </div>
                 
                 <div class="dashboard-card">
                     <div class="card-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stats">0%</div>
+                    <div class="stats"><%= turnout %>%</div>
                     <h3 class="card-title">Voter Turnout</h3>
-                    <p class="card-subtitle">Of eligible students</p>
+                    <p class="card-subtitle">Eligible students</p>
                 </div>
                 
                 <div class="dashboard-card">
                     <div class="card-icon"><i class="fas fa-clock"></i></div>
-                    <div class="stats">--</div>
+                    <div class="stats"><%= timeRemaining %></div>
                     <h3 class="card-title">Time Remaining</h3>
-                    <p class="card-subtitle">Until voting ends</p>
+                    <p class="card-subtitle"><%= activeElection != null ? activeElection.getElection_name() : "No active election" %></p>
                 </div>
             </div>
             
@@ -107,50 +170,36 @@
             <!-- Add Candidate Form -->
             <div id="add-candidate-section" class="admin-section" style="display: none;">
                 <h3><i class="fas fa-user-plus"></i> Add New Candidate</h3>
-                <form id="candidate-form" action="AddCandidateServlet" method="POST" enctype="multipart/form-data">
+                <p style="color:#666;">Candidates now link to existing students (USERS) and positions for the active election.</p>
+                <form id="candidate-form" action="AddCandidateServlet" method="POST">
                     <div class="form-group">
-                        <label for="candidateName"><i class="fas fa-user"></i> Candidate Name *</label>
-                        <input type="text" id="candidateName" name="candidateName" class="form-control" required>
+                        <label for="userId"><i class="fas fa-id-card"></i> Student User ID *</label>
+                        <input type="number" id="userId" name="userId" class="form-control" required>
+                        <small style="color:#666;">Provide the user_id from USERS (role = STUDENT)</small>
                     </div>
-                    
+
                     <div class="form-group">
-                        <label for="candidateEmail"><i class="fas fa-envelope"></i> Candidate Email *</label>
-                        <input type="email" id="candidateEmail" name="candidateEmail" class="form-control" required>
+                        <label for="positionId"><i class="fas fa-briefcase"></i> Position *</label>
+                        <select id="positionId" name="positionId" class="form-control" <%= activeElection == null ? "disabled" : "" %> required>
+                            <option value="">Select position</option>
+                            <% if (positions != null) { 
+                                   for (Position pos : positions) { %>
+                                <option value="<%= pos.getPosition_id() %>"><%= pos.getPosition_name() %></option>
+                            <%   } 
+                               } %>
+                        </select>
+                        <% if (activeElection == null) { %>
+                            <small style="color:#d9534f;">No ACTIVE election. Activate one to add candidates.</small>
+                        <% } %>
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="program"><i class="fas fa-graduation-cap"></i> Program</label>
-                            <input type="text" id="program" name="program" class="form-control">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="faculty"><i class="fas fa-university"></i> Faculty *</label>
-                            <select id="faculty" name="faculty" class="form-control" required>
-                                <option value="">Select Faculty</option>
-                                <option value="Faculty of Computer and Mathematical Sciences">Faculty of Computer and Mathematical Sciences</option>
-                                <option value="Faculty of Electrical Engineering">Faculty of Electrical Engineering</option>
-                                <option value="Faculty of Mechanical Engineering">Faculty of Mechanical Engineering</option>
-                                <option value="Faculty of Civil Engineering">Faculty of Civil Engineering</option>
-                                <option value="Faculty of Business Management">Faculty of Business Management</option>
-                                <option value="Faculty of Accountancy">Faculty of Accountancy</option>
-                            </select>
-                        </div>
-                    </div>
-                    
+
                     <div class="form-group">
-                        <label for="desc"><i class="fas fa-file-alt"></i> Description *</label>
-                        <textarea id="desc" name="desc" class="form-control" rows="4" required></textarea>
+                        <label for="manifesto"><i class="fas fa-file-alt"></i> Manifesto *</label>
+                        <textarea id="manifesto" name="manifesto" class="form-control" rows="4" required></textarea>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="candidatePic"><i class="fas fa-camera"></i> Candidate Picture</label>
-                        <input type="file" id="candidatePic" name="candidatePic" class="form-control" accept="image/*">
-                        <small style="color: #666;">Optional. Max 10MB. Supported: JPG, PNG, GIF</small>
-                    </div>
-                    
+
                     <div style="text-align: center; margin-top: 2rem;">
-                        <button type="submit" class="btn">
+                        <button type="submit" class="btn" <%= activeElection == null ? "disabled" : "" %>>
                             <i class="fas fa-save"></i> Add Candidate
                         </button>
                         <button type="button" id="cancel-add-candidate" class="btn" style="background: #6c757d;">
@@ -163,78 +212,58 @@
             <!-- Recent Candidates Preview -->
             <div id="candidate-list-section" class="admin-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h3><i class="fas fa-users"></i> Recent Candidates</h3>
+                    <h3><i class="fas fa-users"></i> Candidates by Position</h3>
                     <a href="CandidateListServlet" class="btn" style="padding: 8px 16px; font-size: 0.9rem;">
                         <i class="fas fa-external-link-alt"></i> View All
                     </a>
                 </div>
-                
-                <% if (candidates != null && !candidates.isEmpty()) { %>
-                    <table class="candidate-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Program</th>
-                                <th>Faculty</th>
-                                <th>Email</th>
-                                <th>Added By</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% 
-                                // Show only first 5 candidates for preview
-                                int count = 0;
-                                for (Candidate candidate : candidates) {
-                                    if (count >= 5) break;
-                            %>
-                                <tr>
-                                    <td>
-                                        <div style="display: flex; align-items: center; gap: 10px;">
-                                            <% if (candidate.getCandidatePic() != null && !candidate.getCandidatePic().isEmpty()) { %>
-                                                <img src="<%= candidate.getCandidatePic() %>" 
-                                                     alt="<%= candidate.getCandidateName() %>" 
-                                                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                                            <% } else { %>
-                                                <div style="width: 40px; height: 40px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-                                                    <i class="fas fa-user" style="color: #666;"></i>
-                                                </div>
-                                            <% } %>
-                                            <%= candidate.getCandidateName() %>
-                                        </div>
-                                    </td>
-                                    <td><%= candidate.getProgram() != null ? candidate.getProgram() : "N/A" %></td>
-                                    <td><%= candidate.getFaculty() %></td>
-                                    <td><%= candidate.getCandidateEmail() %></td>
-                                    <td><%= candidate.getAdminID() != null ? candidate.getAdminID() : "System" %></td>
-                                    <td>
-                                        <a href="editCandidate.jsp?id=<%= candidate.getCandidateID() %>" 
-                                           class="action-btn edit-btn">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </a>
-                                        <a href="DeleteCandidateServlet?id=<%= candidate.getCandidateID() %>" 
-                                           class="action-btn delete-btn"
-                                           onclick="return confirm('Delete <%= candidate.getCandidateName() %>?')">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </a>
-                                    </td>
-                                </tr>
-                            <% 
-                                    count++;
-                                } 
-                            %>
-                        </tbody>
-                    </table>
-                <% } else { %>
+
+                <% if (activeElection == null) { %>
                     <div style="text-align: center; padding: 2rem; color: #666;">
-                        <i class="fas fa-users-slash" style="font-size: 3rem; margin-bottom: 1rem; color: #ddd;"></i>
-                        <h4>No Candidates Yet</h4>
-                        <p>Start by adding your first candidate</p>
-                        <button id="add-first-candidate" class="btn" style="margin-top: 1rem;">
-                            <i class="fas fa-user-plus"></i> Add First Candidate
-                        </button>
+                        <i class="fas fa-ban" style="font-size: 3rem; margin-bottom: 1rem; color: #ddd;"></i>
+                        <h4>No active election</h4>
+                        <p>Activate an election to see positions and candidates.</p>
                     </div>
-                <% } %>
+                <% } else if (positions == null || positions.isEmpty()) { %>
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        <i class="fas fa-briefcase" style="font-size: 3rem; margin-bottom: 1rem; color: #ddd;"></i>
+                        <h4>No positions configured</h4>
+                        <p>Add positions for <strong><%= activeElection.getElection_name() %></strong> to start registering candidates.</p>
+                    </div>
+                <% } else { 
+                        int shown = 0;
+                        for (Position pos : positions) {
+                            List<CandidateView> positionCandidates = candidatesByPosition.get(pos.getPosition_id());
+                %>
+                    <div style="margin-bottom: 1rem;">
+                        <h4 style="margin:0 0 0.5rem 0;"><i class="fas fa-briefcase"></i> <%= pos.getPosition_name() %></h4>
+                        <% if (positionCandidates != null && !positionCandidates.isEmpty()) { %>
+                            <table class="candidate-table">
+                                <thead>
+                                    <tr>
+                                        <th>Candidate</th>
+                                        <th>Email</th>
+                                        <th>Manifesto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% for (CandidateView view : positionCandidates) { 
+                                           if (shown >= 5) { break; }
+                                           shown++;
+                                    %>
+                                        <tr>
+                                            <td><%= view.getUserName() %></td>
+                                            <td><%= view.getEmail() %></td>
+                                            <td><%= view.getManifesto() != null ? view.getManifesto() : "N/A" %></td>
+                                        </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        <% } else { %>
+                            <p style="color:#888; margin:0 0 1rem 0;">No candidates registered for this position yet.</p>
+                        <% } %>
+                    </div>
+                <%  } } %>
             </div>
             
             <!-- Quick Stats -->

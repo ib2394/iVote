@@ -104,6 +104,38 @@ public class VoteDAO {
         return 0;
     }
 
+    public int getTotalVotesByElection(int electionId) {
+        String sql = "SELECT COUNT(*) FROM Votes v " +
+                     "JOIN Positions p ON v.position_id = p.position_id " +
+                     "WHERE p.election_id = ?";
+        try (Connection conn = DBConnection.createConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, electionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public int getTotalVotesByPosition(int positionId) {
+        String sql = "SELECT COUNT(*) FROM Votes WHERE position_id = ?";
+        try (Connection conn = DBConnection.createConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, positionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     // OPTIONAL: get a Vote record by id
     public Vote getVoteById(int voteId) {
         String query = "SELECT vote_id, user_id, candidate_id, position_id, vote_time " +
