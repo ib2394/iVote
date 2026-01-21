@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
 
-@WebServlet("/AddCandidateServlet")
 @MultipartConfig(
     fileSizeThreshold = 1024 * 1024 * 2, // 2MB
     maxFileSize = 1024 * 1024 * 10,      // 10MB
@@ -46,14 +45,14 @@ public class AddCandidateServlet extends HttpServlet {
         
         // Get form parameters
         String candidateName = request.getParameter("candidateName");
-        String candidateEmail = request.getParameter("candidateEmail");
+        String email = request.getParameter("email");
         String program = request.getParameter("program");
         String faculty = request.getParameter("faculty");
         String desc = request.getParameter("desc");
         
         // Handle file upload for candidate picture
-        String candidatePic = null;
-        Part filePart = request.getPart("candidatePic");
+        String photoUrl = null;
+        Part filePart = request.getPart("photoUrl");
         
         if (filePart != null && filePart.getSize() > 0) {
             String fileName = getFileName(filePart);
@@ -78,13 +77,13 @@ public class AddCandidateServlet extends HttpServlet {
                     Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
                 
-                candidatePic = UPLOAD_DIR + "/" + uniqueFileName;
+                photoUrl = UPLOAD_DIR + "/" + uniqueFileName;
             }
         }
         
         // Validate required fields
         if (candidateName == null || candidateName.trim().isEmpty() ||
-            candidateEmail == null || candidateEmail.trim().isEmpty() ||
+            email == null || email.trim().isEmpty() ||
             faculty == null || faculty.trim().isEmpty() ||
             desc == null || desc.trim().isEmpty()) {
             
@@ -94,7 +93,7 @@ public class AddCandidateServlet extends HttpServlet {
         }
         
         // Validate email format
-        if (!candidateEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
             session.setAttribute("errorMessage", "Please enter a valid email address!");
             response.sendRedirect("addCandidate.jsp");
             return;
@@ -103,12 +102,12 @@ public class AddCandidateServlet extends HttpServlet {
         // Create Candidate object
         Candidate candidate = new Candidate();
         candidate.setCandidateName(candidateName.trim());
-        candidate.setCandidateEmail(candidateEmail.trim());
-        candidate.setCandidatePic(candidatePic);
+        candidate.setEmail(email.trim());
+        candidate.setPhotoUrl(photoUrl);
         candidate.setProgram(program != null ? program.trim() : "");
         candidate.setFaculty(faculty.trim());
-        candidate.setDesc(desc.trim());
-        candidate.setAdminID(adminID);
+        candidate.setDescription(desc.trim());
+        //candidate.setAdminID(adminID);
         
         // Create CandidateDao object
         CandidateDAO candidateDAO = new CandidateDAO();
