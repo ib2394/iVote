@@ -121,4 +121,30 @@ public class UserDAO {
         }
         return null;
     }
+
+    public Users getUserByEmail(String email) {
+        if (email == null) return null;
+        String query = "SELECT user_id, user_name, password, email, role, status " +
+                       "FROM Users WHERE email = ?";
+        try (Connection conn = DBConnection.createConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Users user = new Users();
+                    user.setUser_id(rs.getInt("user_id"));
+                    user.setUser_name(rs.getString("user_name"));
+                    user.setPassword(rs.getString("password"));
+                    user.setEmail(rs.getString("email"));
+                    user.setRole(rs.getString("role"));
+                    user.setStatus(rs.getString("status"));
+                    return user;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

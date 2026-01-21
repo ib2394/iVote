@@ -22,6 +22,24 @@ public class VotingServlet extends HttpServlet {
 
         HttpSession session = request.getSession(false);
         Users user = (session != null) ? (Users) session.getAttribute("user") : null;
+        String legacyRole = (session != null) ? (String) session.getAttribute("role") : null;
+        String legacyUserName = (session != null) ? (String) session.getAttribute("userName") : null;
+
+        if (user == null) {
+            // legacy login path (must map to a real Users row to vote)
+            if (legacyRole == null || !"student".equalsIgnoreCase(legacyRole)) {
+                response.sendRedirect("login.jsp");
+                return;
+            }
+            if (legacyUserName != null && legacyUserName.indexOf("@") > 0) {
+                dao.UserDAO userDAO = new dao.UserDAO();
+                Users maybe = userDAO.getUserByEmail(legacyUserName);
+                if (maybe != null) {
+                    user = maybe;
+                    session.setAttribute("user", user);
+                }
+            }
+        }
 
         if (user == null || !"STUDENT".equalsIgnoreCase(user.getRole())) {
             response.sendRedirect("login.jsp");

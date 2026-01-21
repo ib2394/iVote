@@ -162,7 +162,7 @@
                             if ("admin".equals(role)) {
                                 session.setAttribute("userName", userName);
                                 session.setAttribute("role", "admin");
-                                response.sendRedirect("adminDashboard.html");
+                                response.sendRedirect("adminDashboard.jsp");
 
                             } else if ("student".equals(role) || "lecturer".equals(role)){
                                 session.setAttribute("userName", userName);

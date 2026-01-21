@@ -28,7 +28,25 @@ public class AddCandidateServlet extends HttpServlet {
         
         // Only admins can add candidates
         Users currentUser = (Users) session.getAttribute("user");
-        if (currentUser == null || !"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
+        String legacyRole = (String) session.getAttribute("role");
+        String legacyUserName = (String) session.getAttribute("userName");
+
+        if (currentUser == null) {
+            if (legacyRole == null || !"admin".equalsIgnoreCase(legacyRole)) {
+                response.sendRedirect("login.jsp");
+                return;
+            }
+            if (legacyUserName != null && legacyUserName.indexOf("@") > 0) {
+                dao.UserDAO userDAO = new dao.UserDAO();
+                Users maybe = userDAO.getUserByEmail(legacyUserName);
+                if (maybe != null) {
+                    currentUser = maybe;
+                    session.setAttribute("user", currentUser);
+                }
+            }
+        }
+
+        if (currentUser != null && !"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             response.sendRedirect("login.jsp");
             return;
         }
