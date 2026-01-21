@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html;charset=UTF-8" %>
 <%@ page import="javax.servlet.http.*, java.io.*" %>
 <%@ page import="java.sql.Connection, java.sql.DriverManager, java.sql.PreparedStatement, java.sql.ResultSet, java.sql.SQLException" %>
+<%@ page import="java.sql.*" %>
 
 <!DOCTYPE html>
 <html>
@@ -63,8 +64,7 @@
                 color: #555;
             }
 
-            .form-group input,
-            .form-group select {
+            .form-group input {
                 width: 100%;
                 padding: 0.8rem;
                 border-radius: 10px;
@@ -72,8 +72,7 @@
                 font-size: 0.95rem;
             }
 
-            .form-group input:focus,
-            .form-group select:focus {
+            .form-group input:focus {
                 outline: none;
                 border-color: #667eea;
             }
@@ -106,10 +105,6 @@
                 text-decoration: none;
                 font-weight: 500;
             }
-
-            .login-footer a:hover {
-                text-decoration: underline;
-            }
         </style>
     </head>
 
@@ -119,13 +114,12 @@
             <div class="login-container">
 
                 <div class="login-header">
-                    <div class="logo-circle">🗳️</div>
+                    <div class="logo-circle">🗳</div>
                     <h1>iVote Login</h1>
                     <p>Interactive Student Election System</p>
                 </div>
 
                 <form action="login.jsp" method="post">
-
                     <div class="form-group">
                         <label>Username</label>
                         <input type="text" name="userName" required>
@@ -146,6 +140,7 @@
 
                 <%
                     if ("POST".equalsIgnoreCase(request.getMethod())) {
+
                         String userName = request.getParameter("userName");
                         String password = request.getParameter("password");
 
