@@ -5,84 +5,97 @@
  */
 package dao;
 
-import bean.Candidate;
-import com.java.bean.Vote;
+import bean.Vote;
 import util.DBConnection;
+
 import java.sql.*;
-import java.util.List;
 
 public class VoteDAO {
-    
-    public boolean castVote(int voterId, int candidateId, String ipAddress) {
-        // Check if user has already voted
-        if (hasVoted(voterId)) {
+
+    // Cast a vote (insert into Votes)
+    public boolean castVote(int userId, int candidateId, int positionId) {
+
+        // optional: block if user already voted for this position
+        if (hasVotedForPosition(userId, positionId)) {
             return false;
         }
-        
-        String query = "INSERT INTO Votes (voter_id, candidate_id, ip_address) VALUES (?, ?, ?)";
-        
-        try (Connection conn = DBConnection.createConnection()) {
-            // Start transaction
-            conn.setAutoCommit(false);
-            
-            try (PreparedStatement pstmt = conn.prepareStatement(query)) {
-                pstmt.setInt(1, voterId);
-                pstmt.setInt(2, candidateId);
-                pstmt.setString(3, ipAddress);
-                
-                int rowsAffected = pstmt.executeUpdate();
-                
-                if (rowsAffected > 0) {
-                    // Update user's vote status
-                    UserDAO userDAO = new UserDAO();
-                    if (userDAO.updateVoteStatus(voterId)) {
-                        conn.commit();
-                        return true;
-                    }
-                }
-                conn.rollback();
-                return false;
-            }
+
+        String query = "INSERT INTO Votes (user_id, candidate_id, position_id, vote_time) " +
+                       "VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
+
+        try (Connection conn = DBConnection.createConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, candidateId);
+            pstmt.setInt(3, positionId);
+
+            return pstmt.executeUpdate() > 0;
+
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
-    
-    public boolean hasVoted(int voterId) {
-        String query = "SELECT COUNT(*) FROM Votes WHERE voter_id = ?";
-        
+
+    // Check if a user already voted for a specific position
+    public boolean hasVotedForPosition(int userId, int positionId) {
+        String query = "SELECT COUNT(*) FROM Votes WHERE user_id = ? AND position_id = ?";
+
         try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
-            pstmt.setInt(1, voterId);
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, positionId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
     }
-    
+
+    // If you want: check if user has voted at all (any position)
+    public boolean hasVoted(int userId) {
+        String query = "SELECT COUNT(*) FROM Votes WHERE user_id = ?";
+
+        try (Connection conn = DBConnection.createConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, userId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public int getTotalVotes() {
         String query = "SELECT COUNT(*) FROM Votes";
-        
+
         try (Connection conn = DBConnection.createConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-            
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
+             PreparedStatement pstmt = conn.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            if (rs.next()) return rs.getInt(1);
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return 0;
     }
-    
+
     public int getVoterTurnout(int totalEligibleVoters) {
         int totalVotes = getTotalVotes();
         if (totalEligibleVoters > 0) {
@@ -90,4 +103,33 @@ public class VoteDAO {
         }
         return 0;
     }
+
+    // OPTIONAL: get a Vote record by id
+    public Vote getVoteById(int voteId) {
+        String query = "SELECT vote_id, user_id, candidate_id, position_id, vote_time " +
+                       "FROM Votes WHERE vote_id = ?";
+
+        try (Connection conn = DBConnection.createConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, voteId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    Vote v = new Vote();
+                    v.setVote_id(rs.getInt("vote_id"));
+                    v.setUser_id(rs.getInt("user_id"));
+                    v.setCandidate_id(rs.getInt("candidate_id"));
+                    v.setPosition_id(rs.getInt("position_id"));
+                    v.setVote_time(rs.getDate("vote_time")); // if your DB uses DATETIME/TIMESTAMP, you may prefer getTimestamp()
+                    return v;
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
+

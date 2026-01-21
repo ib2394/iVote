@@ -1,36 +1,29 @@
 package dao;
 
-import bean.Candidate;
+import bean.Candidates;
 import util.DBConnection;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CandidateDAO {
-    
-    public List<Candidate> getAllCandidates() {
-        List<Candidate> candidates = new ArrayList<>();
-        String query = "SELECT c.*, COUNT(v.vote_id) as vote_count " +
-                      "FROM Candidates c " +
-                      "LEFT JOIN Votes v ON c.candidate_id = v.candidate_id " +
-                      "GROUP BY c.candidate_id " +
-                      "ORDER BY vote_count DESC";
-        
+
+    public List<Candidates> getAllCandidates() {
+        List<Candidates> candidates = new ArrayList<>();
+        String query = "SELECT candidate_id, user_id, position_id, manifesto " +
+                       "FROM Candidates ORDER BY candidate_id";
+
         try (Connection conn = DBConnection.createConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-            
+             PreparedStatement pstmt = conn.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+
             while (rs.next()) {
-                Candidate candidate = new Candidate();
-                candidate.setCandidateId(rs.getInt("candidate_id"));
-                candidate.setCandidateName(rs.getString("candidate_name"));
-                candidate.setEmail(rs.getString("email"));
-                candidate.setProgram(rs.getString("program"));
-                candidate.setFaculty(rs.getString("faculty"));
-                candidate.setDescription(rs.getString("description"));
-                candidate.setPhotoUrl(rs.getString("photo_url"));
-                candidate.setVoteCount(rs.getInt("vote_count"));
-                
+                Candidates candidate = new Candidates();
+                candidate.setCandidate_id(rs.getInt("candidate_id"));
+                candidate.setUser_id(rs.getInt("user_id"));
+                candidate.setPosition_id(rs.getInt("position_id"));
+                candidate.setManifesto(rs.getString("manifesto"));
                 candidates.add(candidate);
             }
         } catch (SQLException e) {
@@ -38,90 +31,131 @@ public class CandidateDAO {
         }
         return candidates;
     }
-    
-    public boolean addCandidate(Candidate candidate) {
-        String query = "INSERT INTO Candidates (candidate_name, email, program, faculty, description, photo_url) " +
-                      "VALUES (?, ?, ?, ?, ?, ?)";
-        
+
+    public boolean addCandidate(Candidates candidate) {
+        String query = "INSERT INTO Candidates (user_id, position_id, manifesto) VALUES (?, ?, ?)";
+
         try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
-            pstmt.setString(1, candidate.getCandidateName());
-            pstmt.setString(2, candidate.getEmail());
-            pstmt.setString(3, candidate.getProgram());
-            pstmt.setString(4, candidate.getFaculty());
-            pstmt.setString(5, candidate.getDescription());
-            pstmt.setString(6, candidate.getPhotoUrl());
-            
-            int rowsAffected = pstmt.executeUpdate();
-            return rowsAffected > 0;
+
+            pstmt.setInt(1, candidate.getUser_id());
+            pstmt.setInt(2, candidate.getPosition_id());
+            pstmt.setString(3, candidate.getManifesto());
+
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
-    
-    public boolean updateCandidate(Candidate candidate) {
-        String query = "UPDATE Candidates SET candidate_name = ?, email = ?, program = ?, " +
-                      "faculty = ?, description = ?, photo_url = ? WHERE candidate_id = ?";
-        
+
+    public boolean updateCandidate(Candidates candidate) {
+        String query = "UPDATE Candidates SET user_id = ?, position_id = ?, manifesto = ? " +
+                       "WHERE candidate_id = ?";
+
         try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
-            pstmt.setString(1, candidate.getCandidateName());
-            pstmt.setString(2, candidate.getEmail());
-            pstmt.setString(3, candidate.getProgram());
-            pstmt.setString(4, candidate.getFaculty());
-            pstmt.setString(5, candidate.getDescription());
-            pstmt.setString(6, candidate.getPhotoUrl());
-            pstmt.setInt(7, candidate.getCandidateId());
-            
-            int rowsAffected = pstmt.executeUpdate();
-            return rowsAffected > 0;
+
+            pstmt.setInt(1, candidate.getUser_id());
+            pstmt.setInt(2, candidate.getPosition_id());
+            pstmt.setString(3, candidate.getManifesto());
+            pstmt.setInt(4, candidate.getCandidate_id());
+
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
-    
+
     public boolean deleteCandidate(int candidateId) {
         String query = "DELETE FROM Candidates WHERE candidate_id = ?";
-        
+
         try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
+
             pstmt.setInt(1, candidateId);
-            int rowsAffected = pstmt.executeUpdate();
-            return rowsAffected > 0;
+            return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
-    
-    public Candidate getCandidateById(int candidateId) {
-        Candidate candidate = null;
-        String query = "SELECT * FROM Candidates WHERE candidate_id = ?";
-        
+
+    public Candidates getCandidateById(int candidateId) {
+        String query = "SELECT candidate_id, user_id, position_id, manifesto " +
+                       "FROM Candidates WHERE candidate_id = ?";
+
         try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
+
             pstmt.setInt(1, candidateId);
-            ResultSet rs = pstmt.executeQuery();
-            
-            if (rs.next()) {
-                candidate = new Candidate();
-                candidate.setCandidateId(rs.getInt("candidate_id"));
-                candidate.setCandidateName(rs.getString("candidate_name"));
-                candidate.setEmail(rs.getString("email"));
-                candidate.setProgram(rs.getString("program"));
-                candidate.setFaculty(rs.getString("faculty"));
-                candidate.setDescription(rs.getString("description"));
-                candidate.setPhotoUrl(rs.getString("photo_url"));
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    Candidates candidate = new Candidates();
+                    candidate.setCandidate_id(rs.getInt("candidate_id"));
+                    candidate.setUser_id(rs.getInt("user_id"));
+                    candidate.setPosition_id(rs.getInt("position_id"));
+                    candidate.setManifesto(rs.getString("manifesto"));
+                    return candidate;
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return candidate;
+        return null;
+    }
+
+    public List<Candidates> getCandidatesByPosition(int positionId) {
+        List<Candidates> candidates = new ArrayList<>();
+        String query = "SELECT candidate_id, user_id, position_id, manifesto " +
+                       "FROM Candidates WHERE position_id = ? ORDER BY candidate_id";
+
+        try (Connection conn = DBConnection.createConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, positionId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Candidates candidate = new Candidates();
+                    candidate.setCandidate_id(rs.getInt("candidate_id"));
+                    candidate.setUser_id(rs.getInt("user_id"));
+                    candidate.setPosition_id(rs.getInt("position_id"));
+                    candidate.setManifesto(rs.getString("manifesto"));
+                    candidates.add(candidate);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return candidates;
+    }
+
+    public List<Candidates> getCandidatesByUser(int userId) {
+        List<Candidates> candidates = new ArrayList<>();
+        String query = "SELECT candidate_id, user_id, position_id, manifesto " +
+                       "FROM Candidates WHERE user_id = ? ORDER BY candidate_id";
+
+        try (Connection conn = DBConnection.createConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, userId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    Candidates candidate = new Candidates();
+                    candidate.setCandidate_id(rs.getInt("candidate_id"));
+                    candidate.setUser_id(rs.getInt("user_id"));
+                    candidate.setPosition_id(rs.getInt("position_id"));
+                    candidate.setManifesto(rs.getString("manifesto"));
+                    candidates.add(candidate);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return candidates;
     }
 }
