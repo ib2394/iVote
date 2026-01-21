@@ -5,12 +5,13 @@
  */
 package controller;
 
-import bean.*;
-import dao.*;
-import java.io.*;
-import java.nio.*;
-import javax.servlet.*;
-import javax.servlet.annotation.*;
+import bean.Candidates;
+import bean.Users;
+import dao.CandidateDAO;
+import dao.PositionDAO;
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.*;
 
 @MultipartConfig(
@@ -20,115 +21,45 @@ import javax.servlet.http.*;
 )
 public class AddCandidateServlet extends HttpServlet {
     
-    private static final String UPLOAD_DIR = "photoUrl";
-    
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
         HttpSession session = request.getSession();
         
-        // Check if admin is logged in
-        String adminID = (String) session.getAttribute("adminID");
-        if (adminID == null) {
+        // Only admins can add candidates
+        Users currentUser = (Users) session.getAttribute("user");
+        if (currentUser == null || !"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
             response.sendRedirect("login.jsp");
             return;
         }
-        
-        // Get form parameters
-        String candidateName = request.getParameter("candidateName");
-        String email = request.getParameter("email");
-        String program = request.getParameter("program");
-        String faculty = request.getParameter("faculty");
-        String description = request.getParameter("description");
-        
-        // Handle file upload for candidate picture
-        String photoUrl = null;
-        Part filePart = request.getPart("photoUrl");
-        
-        if (filePart != null && filePart.getSize() > 0) {
-            String fileName = getFileName(filePart);
-            if (fileName != null && !fileName.isEmpty()) {
-                // Get application path
-                String appPath = request.getServletContext().getRealPath("");
-                String uploadPath = appPath + File.separator + UPLOAD_DIR;
-                
-                // Create directory if not exists
-                File uploadDir = new File(uploadPath);
-                if (!uploadDir.exists()) {
-                    uploadDir.mkdirs();
-                }
-                
-                // Generate unique filename
-                String fileExtension = fileName.substring(fileName.lastIndexOf("."));
-                String uniqueFileName = System.currentTimeMillis() + "_" + fileName;
-                File file = new File(uploadDir, uniqueFileName);
-                
-                // Save file
-                try (InputStream input = filePart.getInputStream()) {
-                    Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
-                
-                photoUrl = UPLOAD_DIR + "/" + uniqueFileName;
-            }
-        }
-        
-        // Validate required fields
-        if (candidateName == null || candidateName.trim().isEmpty() ||
-            email == null || email.trim().isEmpty() ||
-            faculty == null || faculty.trim().isEmpty() ||
-            description == null || description.trim().isEmpty()) {
-            
-            session.setAttribute("errorMessage", "Please fill in all required fields!");
-            response.sendRedirect("addCandidate.jsp");
-            return;
-        }
-        
-        // Validate email format
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            session.setAttribute("errorMessage", "Please enter a valid email address!");
-            response.sendRedirect("addCandidate.jsp");
-            return;
-        }
-        
-        // Create Candidate object
-        Candidate candidate = new Candidate();
-        candidate.setCandidateName(candidateName.trim());
-        candidate.setEmail(email.trim());
-        candidate.setPhotoUrl(photoUrl);
-        candidate.setProgram(program != null ? program.trim() : "");
-        candidate.setFaculty(faculty.trim());
-        candidate.setDescription(description.trim());
-        //candidate.setAdminID(adminID);
-        
-        // Create CandidateDao object
-        CandidateDAO candidateDAO = new CandidateDAO();
-        
-        // Call addCandidate method
-        boolean result = candidateDAO.addCandidate(candidate);
-        
-        // Dispatch based on result
-        if ("SUCCESS".equals(result)) {
-            session.setAttribute("successMessage", "Candidate '" + candidateName + "' added successfully!");
-            
+
+        int userId = Integer.parseInt(request.getParameter("userId"));
+        int positionId = Integer.parseInt(request.getParameter("positionId"));
+        String manifesto = request.getParameter("manifesto");
+
+        if (manifesto == null || manifesto.trim().isEmpty()) {
+            session.setAttribute("errorMessage", "Manifesto is required.");
             response.sendRedirect("adminDashboard.jsp");
-            ;
-            
+            return;
+        }
+
+        PositionDAO positionDAO = new PositionDAO();
+        if (positionDAO.getPositionById(positionId) == null) {
+            session.setAttribute("errorMessage", "Invalid position selected.");
+            response.sendRedirect("adminDashboard.jsp");
+            return;
+        }
+
+        Candidates candidate = new Candidates(userId, positionId, manifesto.trim());
+        CandidateDAO candidateDAO = new CandidateDAO();
+        boolean result = candidateDAO.addCandidate(candidate);
+
+        if (result) {
+            session.setAttribute("successMessage", "Candidate added successfully.");
         } else {
-            session.setAttribute("errorMessage", "Failed to add candidate. " + result);
-            response.sendRedirect("addCandidate.jsp");
+            session.setAttribute("errorMessage", "Failed to add candidate. Please retry.");
         }
-    }
-    
-    // Helper method to get filename from part
-    private String getFileName(Part part) {
-        String contentDisp = part.getHeader("content-disposition");
-        String[] items = contentDisp.split(";");
-        for (String item : items) {
-            if (item.trim().startsWith("filename")) {
-                return item.substring(item.indexOf("=") + 2, item.length() - 1);
-            }
-        }
-        return null;
+        response.sendRedirect("adminDashboard.jsp");
     }
     
     @Override
