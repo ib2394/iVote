@@ -22,7 +22,7 @@ public class CandidateDAO {
             while (rs.next()) {
                 Candidates candidate = new Candidates();
                 candidate.setCandidate_id(rs.getInt("candidate_id"));
-                candidate.setUser_id(rs.getInt("user_id"));
+                candidate.setUserId(rs.getInt("user_id"));
                 candidate.setPosition_id(rs.getInt("position_id"));
                 candidate.setManifesto(rs.getString("manifesto"));
                 candidates.add(candidate);
@@ -54,7 +54,7 @@ public class CandidateDAO {
         try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setInt(1, candidate.getUser_id());
+            pstmt.setInt(1, candidate.getUserId());
             pstmt.setInt(2, candidate.getPosition_id());
             pstmt.setString(3, candidate.getManifesto());
 
@@ -72,7 +72,7 @@ public class CandidateDAO {
         try (Connection conn = DBConnection.createConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setInt(1, candidate.getUser_id());
+            pstmt.setInt(1, candidate.getUserId());
             pstmt.setInt(2, candidate.getPosition_id());
             pstmt.setString(3, candidate.getManifesto());
             pstmt.setInt(4, candidate.getCandidate_id());
@@ -111,7 +111,7 @@ public class CandidateDAO {
                 if (rs.next()) {
                     Candidates candidate = new Candidates();
                     candidate.setCandidate_id(rs.getInt("candidate_id"));
-                    candidate.setUser_id(rs.getInt("user_id"));
+                    candidate.setUserId(rs.getInt("user_id"));
                     candidate.setPosition_id(rs.getInt("position_id"));
                     candidate.setManifesto(rs.getString("manifesto"));
                     return candidate;
@@ -137,7 +137,7 @@ public class CandidateDAO {
                 while (rs.next()) {
                     Candidates candidate = new Candidates();
                     candidate.setCandidate_id(rs.getInt("candidate_id"));
-                    candidate.setUser_id(rs.getInt("user_id"));
+                    candidate.setUserId(rs.getInt("user_id"));
                     candidate.setPosition_id(rs.getInt("position_id"));
                     candidate.setManifesto(rs.getString("manifesto"));
                     candidates.add(candidate);
@@ -163,7 +163,7 @@ public class CandidateDAO {
                 while (rs.next()) {
                     Candidates candidate = new Candidates();
                     candidate.setCandidate_id(rs.getInt("candidate_id"));
-                    candidate.setUser_id(rs.getInt("user_id"));
+                    candidate.setUserId(rs.getInt("user_id"));
                     candidate.setPosition_id(rs.getInt("position_id"));
                     candidate.setManifesto(rs.getString("manifesto"));
                     candidates.add(candidate);
@@ -178,11 +178,10 @@ public class CandidateDAO {
     public List<CandidateView> getCandidateViewsByElection(int electionId) {
         List<CandidateView> result = new ArrayList<>();
         String sql = "SELECT c.candidate_id, c.user_id, u.user_name, u.email, " +
-                     "       c.position_id, p.position_name, p.election_id, e.election_name, " +
+                     "       c.position_id, p.election_id, e.election_name, " +
                      "       c.manifesto " +
                      "FROM Candidates c " +
                      "JOIN Users u ON c.user_id = u.user_id " +
-                     "JOIN Positions p ON c.position_id = p.position_id " +
                      "JOIN Elections e ON p.election_id = e.election_id " +
                      "WHERE p.election_id = ? " +
                      "ORDER BY p.position_name, u.user_name";
@@ -198,8 +197,6 @@ public class CandidateDAO {
                     view.setUserId(rs.getInt("user_id"));
                     view.setUserName(rs.getString("user_name"));
                     view.setEmail(rs.getString("email"));
-                    view.setPositionId(rs.getInt("position_id"));
-                    view.setPositionName(rs.getString("position_name"));
                     view.setElectionId(rs.getInt("election_id"));
                     view.setElectionName(rs.getString("election_name"));
                     view.setManifesto(rs.getString("manifesto"));
@@ -212,14 +209,45 @@ public class CandidateDAO {
         return result;
     }
 
-    public List<CandidateView> getCandidateViewsByPosition(int positionId) {
+    public List<CandidateView> getAllCandidateViews() {
         List<CandidateView> result = new ArrayList<>();
         String sql = "SELECT c.candidate_id, c.user_id, u.user_name, u.email, " +
-                     "       c.position_id, p.position_name, p.election_id, e.election_name, " +
+                     "       p.election_id, e.election_name, " +
                      "       c.manifesto " +
                      "FROM Candidates c " +
                      "JOIN Users u ON c.user_id = u.user_id " +
                      "JOIN Positions p ON c.position_id = p.position_id " +
+                     "LEFT JOIN Elections e ON p.election_id = e.election_id " +
+                     "ORDER BY p.position_name, u.user_name";
+
+        try (Connection conn = DBConnection.createConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                CandidateView view = new CandidateView();
+                view.setCandidateId(rs.getInt("candidate_id"));
+                view.setUserId(rs.getInt("user_id"));
+                view.setUserName(rs.getString("user_name"));
+                view.setEmail(rs.getString("email"));
+                view.setElectionId(rs.getInt("election_id"));
+                view.setElectionName(rs.getString("election_name"));
+                view.setManifesto(rs.getString("manifesto"));
+                result.add(view);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    public List<CandidateView> getCandidateViewsByPosition(int positionId) {
+        List<CandidateView> result = new ArrayList<>();
+        String sql = "SELECT c.candidate_id, c.user_id, u.user_name, u.email, " +
+                     "       p.election_id, e.election_name, " +
+                     "       c.manifesto " +
+                     "FROM Candidates c " +
+                     "JOIN Users u ON c.user_id = u.user_id " +
                      "JOIN Elections e ON p.election_id = e.election_id " +
                      "WHERE c.position_id = ? " +
                      "ORDER BY u.user_name";
@@ -235,8 +263,6 @@ public class CandidateDAO {
                     view.setUserId(rs.getInt("user_id"));
                     view.setUserName(rs.getString("user_name"));
                     view.setEmail(rs.getString("email"));
-                    view.setPositionId(rs.getInt("position_id"));
-                    view.setPositionName(rs.getString("position_name"));
                     view.setElectionId(rs.getInt("election_id"));
                     view.setElectionName(rs.getString("election_name"));
                     view.setManifesto(rs.getString("manifesto"));

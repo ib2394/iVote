@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package controller;
 
 import bean.Candidates;
@@ -11,22 +6,20 @@ import dao.CandidateDAO;
 import dao.PositionDAO;
 import java.io.IOException;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.MultipartConfig;
-import javax.servlet.http.*;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
-@MultipartConfig(
-    fileSizeThreshold = 1024 * 1024 * 2, // 2MB
-    maxFileSize = 1024 * 1024 * 10,      // 10MB
-    maxRequestSize = 1024 * 1024 * 50    // 50MB
-)
 public class AddCandidateServlet extends HttpServlet {
     
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
         HttpSession session = request.getSession();
         
-        // Only admins can add candidates
+        // Check if admin is logged in
         Users currentUser = (Users) session.getAttribute("user");
         String legacyRole = (String) session.getAttribute("role");
         String legacyUserName = (String) session.getAttribute("userName");
@@ -50,39 +43,60 @@ public class AddCandidateServlet extends HttpServlet {
             response.sendRedirect("login.jsp");
             return;
         }
-
-        int userId = Integer.parseInt(request.getParameter("userId"));
-        int positionId = Integer.parseInt(request.getParameter("positionId"));
+        
+        // Get form parameters
+        String userIdStr = request.getParameter("userId");
+        String positionIdStr = request.getParameter("positionId");
         String manifesto = request.getParameter("manifesto");
-
-        if (manifesto == null || manifesto.trim().isEmpty()) {
-            session.setAttribute("errorMessage", "Manifesto is required.");
-            response.sendRedirect("adminDashboard.jsp");
+        
+        // Validate inputs
+        if (userIdStr == null || userIdStr.trim().isEmpty() || 
+            positionIdStr == null || positionIdStr.trim().isEmpty() ||
+            manifesto == null || manifesto.trim().isEmpty()) {
+            
+            session.setAttribute("errorMessage", "Please fill in all required fields!");
+            response.sendRedirect("addCandidate.jsp");
             return;
         }
-
-        PositionDAO positionDAO = new PositionDAO();
-        if (positionDAO.getPositionById(positionId) == null) {
-            session.setAttribute("errorMessage", "Invalid position selected.");
-            response.sendRedirect("adminDashboard.jsp");
-            return;
+        
+        try {
+            int userId = Integer.parseInt(userIdStr);
+            int positionId = Integer.parseInt(positionIdStr);
+            
+            // Validate position exists
+            PositionDAO positionDAO = new PositionDAO();
+            if (positionDAO.getPositionById(positionId) == null) {
+                session.setAttribute("errorMessage", "Invalid position selected.");
+                response.sendRedirect("addCandidate.jsp");
+                return;
+            }
+            
+            // Create Candidate object
+            Candidates candidate = new Candidates();
+            candidate.setUserId(userId);
+            candidate.setPosition_id(positionId);
+            candidate.setManifesto(manifesto.trim());
+            
+            // Call DAO to insert into database
+            CandidateDAO candidateDAO = new CandidateDAO();
+            boolean success = candidateDAO.addCandidate(candidate);
+            
+            // Handle result
+            if (success) {
+                session.setAttribute("successMessage", "Candidate added successfully!");
+                response.sendRedirect("CandidateListServlet");
+            } else {
+                session.setAttribute("errorMessage", "Failed to add candidate. Please check if user exists and is not already a candidate for this position.");
+                response.sendRedirect("addCandidate.jsp");
+            }
+            
+        } catch (NumberFormatException e) {
+            session.setAttribute("errorMessage", "Invalid User ID or Position ID format!");
+            response.sendRedirect("addCandidate.jsp");
+        } catch (Exception e) {
+            session.setAttribute("errorMessage", "Error: " + e.getMessage());
+            e.printStackTrace();
+            response.sendRedirect("addCandidate.jsp");
         }
-
-        Candidates candidate = new Candidates(userId, positionId, manifesto.trim());
-        CandidateDAO candidateDAO = new CandidateDAO();
-        boolean result = candidateDAO.addCandidate(candidate);
-
-        if (result) {
-            session.setAttribute("successMessage", "Candidate added successfully.");
-        } else {
-            session.setAttribute("errorMessage", "Failed to add candidate. Please retry.");
-        }
-        response.sendRedirect("adminDashboard.jsp");
-    }
-    
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.sendRedirect("addCandidate.jsp");
     }
 }

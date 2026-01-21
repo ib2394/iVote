@@ -156,9 +156,9 @@
             </div>
             
             <div class="admin-actions">
-                <button id="add-candidate-btn" class="btn btn-success">
+                <a id="add-candidate-btn" class="btn btn-success" href="addCandidate.jsp">
                     <i class="fas fa-user-plus"></i> Add New Candidate
-                </button>
+                </a>
                 <a href="CandidateListServlet" class="btn">
                     <i class="fas fa-list"></i> Manage Candidates
                 </a>
