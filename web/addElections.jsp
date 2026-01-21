@@ -98,7 +98,7 @@
                     out.println("<p style='color:green;'>Election added successfully!</p>");
 
                     // optional: redirect to clear form resubmission (you had redirect, keep it)
-                    response.sendRedirect("addElections.jsp");
+                    response.sendRedirect("editElections.jsp");
                     return;
 
                 } catch (SQLException e) {

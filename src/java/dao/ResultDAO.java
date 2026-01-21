@@ -1,56 +1,50 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package dao;
 
 import bean.CandidateResult;
 import util.DBConnection;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ResultDAO {
 
-    public List<CandidateResult> getResultsByPosition(int positionId) {
+    // Get results by election_id
+    public List<CandidateResult> getResultsByElectionId(int election_id) {
         List<CandidateResult> results = new ArrayList<>();
 
-        String sql =
-            "SELECT c.candidate_id, c.user_id, c.position_id, c.manifesto, " +
-            "       u.user_name, u.email, p.position_name, " +
+        String query =
+            "SELECT c.candidate_id, c.user_id, u.user_name, u.email, " +
+            "       c.manifesto, " +
             "       COUNT(v.vote_id) AS vote_count, " +
             "       CASE WHEN tv.total_votes = 0 THEN 0 " +
             "            ELSE (COUNT(v.vote_id) * 100.0 / tv.total_votes) " +
             "       END AS percentage " +
             "FROM Candidates c " +
             "JOIN Users u ON c.user_id = u.user_id " +
-            "JOIN Position p ON c.position_id = p.position_id " +
-            "LEFT JOIN Votes v ON v.candidate_id = c.candidate_id AND v.position_id = c.position_id " +
-            "LEFT JOIN (SELECT position_id, COUNT(*) AS total_votes FROM Votes WHERE position_id = ? GROUP BY position_id) tv " +
-            "       ON tv.position_id = c.position_id " +
-            "WHERE c.position_id = ? " +
-            "GROUP BY c.candidate_id, c.user_id, c.position_id, c.manifesto, u.user_name, u.email, p.position_name, tv.total_votes " +
+            "LEFT JOIN Votes v ON v.candidate_id = c.candidate_id " +
+            "LEFT JOIN ( " +
+            "    SELECT candidate_id, COUNT(*) AS total_votes " +
+            "    FROM Votes WHERE election_id = ? GROUP BY candidate_id " +
+            ") tv ON tv.candidate_id = c.candidate_id " +
+            "WHERE v.election_id = ? " +
+            "GROUP BY c.candidate_id, c.user_id, u.user_name, u.email, c.manifesto, tv.total_votes " +
             "ORDER BY vote_count DESC";
 
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(query)) {
 
-            ps.setInt(1, positionId);
-            ps.setInt(2, positionId);
+            ps.setInt(1, election_id);  // Set the election_id in the query
+            ps.setInt(2, election_id);  // Filter by election_id for candidates
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     CandidateResult cr = new CandidateResult();
                     cr.setCandidate_id(rs.getInt("candidate_id"));
                     cr.setUser_id(rs.getInt("user_id"));
-                    cr.setPosition_id(rs.getInt("position_id"));
-                    cr.setManifesto(rs.getString("manifesto"));
                     cr.setUser_name(rs.getString("user_name"));
                     cr.setEmail(rs.getString("email"));
-                    cr.setPosition_name(rs.getString("position_name"));
-                    cr.setVoteCount(rs.getInt("vote_count"));
+                    cr.setManifesto(rs.getString("manifesto"));
+                    cr.setVote_count(rs.getInt("vote_count"));
                     cr.setPercentage(rs.getDouble("percentage"));
                     results.add(cr);
                 }
@@ -62,11 +56,12 @@ public class ResultDAO {
         return results;
     }
 
-    public int getTotalVotesByPosition(int positionId) {
-        String sql = "SELECT COUNT(*) FROM Votes WHERE position_id = ?";
+    // Get total votes for a specific election (filtered by election_id)
+    public int getTotalVotesByElectionId(int election_id) {
+        String query = "SELECT COUNT(*) FROM VOTE WHERE election_id = ?";
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, positionId);
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, election_id);  // Use election_id for filtering
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
