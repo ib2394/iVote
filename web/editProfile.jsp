@@ -160,7 +160,8 @@
         String newRole = request.getParameter("role");
         String newFaculty = request.getParameter("faculty");
         String newPassword = request.getParameter("password");
-try {
+
+        try {
             conn = DriverManager.getConnection(
                     "jdbc:derby://localhost:1527/iVoteDB", "app", "app");
 

@@ -1,4 +1,6 @@
 <%@ page language="java" contentType="text/html;charset=UTF-8" %>
+<%@ page import="javax.servlet.http.*, java.io.*" %>
+<%@ page import="java.sql.Connection, java.sql.DriverManager, java.sql.PreparedStatement, java.sql.ResultSet, java.sql.SQLException" %>
 <%@ page import="java.sql.*" %>
 
 <!DOCTYPE html>
@@ -142,62 +144,65 @@
                         String userName = request.getParameter("userName");
                         String password = request.getParameter("password");
 
-                        Connection conn = null;
-                        PreparedStatement ps = null;
-                        ResultSet rs = null;
+                        if (userName != null && password != null) {
+                            Connection conn = null;
+                            PreparedStatement ps = null;
+                            ResultSet rs = null;
 
-                        try {
-                            Class.forName("org.apache.derby.jdbc.ClientDriver");
-                            conn = DriverManager.getConnection(
-                                    "jdbc:derby://localhost:1527/iVoteDB", "app", "app");
-                            String sql = "SELECT USER_ID, USER_NAME, ROLE FROM USERS WHERE USER_NAME=? AND PASSWORD=?";
-                            ps = conn.prepareStatement(sql);
-                            ps.setString(1, userName);
-                            ps.setString(2, password);
+                            try {
+                                Class.forName("org.apache.derby.jdbc.ClientDriver");
+                                conn = DriverManager.getConnection(
+                                        "jdbc:derby://localhost:1527/iVoteDB", "app", "app");
 
-                            rs = ps.executeQuery();
+                                String sql = "SELECT * FROM Users WHERE user_name=? AND password=?";
+                                ps = conn.prepareStatement(sql);
+                                ps.setString(1, userName);
+                                ps.setString(2, password);
 
-                            if (rs.next()) {
-                                // ✅ REQUIRED SESSION VALUES
-                                session.setAttribute("user_id", rs.getInt("USER_ID"));
-                                session.setAttribute("userName", rs.getString("USER_NAME"));
-                                session.setAttribute("role", rs.getString("ROLE"));
+                                rs = ps.executeQuery();
 
-                                response.sendRedirect("editProfile.jsp");
-                                return;
-                            } else {
+                                if (rs.next()) {
+                                    session.setAttribute("user_id", rs.getInt("user_id"));   // 🔑 REQUIRED
+                                    session.setAttribute("userName", rs.getString("user_name"));
+                                    session.setAttribute("role", rs.getString("role"));      // optional
+
+                                    response.sendRedirect("editProfile.jsp");
+                                } else {
                 %>
                 <p style="color:red; text-align:center;">Invalid username or password.</p>
                 <%
-                            }
-                        } catch (Exception e) {
-                            out.println("<p style='color:red; text-align:center;'>Login error.</p>");
-                            e.printStackTrace();
-                        } finally {
-                            if (rs != null) {
+                                }
+
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                out.println("<p style='color:red; text-align:center;'>Error connecting to database.</p>");
+                            } finally {
                                 try {
-                                    rs.close();
-                                } catch (Exception e) {
+                                    if (rs != null) {
+                                        rs.close();
+                                    }
+                                } catch (SQLException e) {
+                                }
+                                try {
+                                    if (ps != null) {
+                                        ps.close();
+                                    }
+                                } catch (SQLException e) {
+                                }
+                                try {
+                                    if (conn != null) {
+                                        conn.close();
+                                    }
+                                } catch (SQLException e) {
                                 }
                             }
-                            if (ps != null) {
-                                try {
-                                    ps.close();
-                                } catch (Exception e) {
-                                }
-                            }
-                            if (conn != null) {
-                                try {
-                                    conn.close();
-                                } catch (Exception e) {
-                                }
-                            }
+                        } else {
+                            out.println("<p style='color:red; text-align:center;'>Please fill in both fields.</p>");
                         }
                     }
                 %>
 
             </div>
         </div>
-
     </body>
 </html>

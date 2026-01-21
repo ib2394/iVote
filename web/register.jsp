@@ -144,7 +144,8 @@
                         <label>Email</label>
                         <input type="email" name="email" required>
                     </div>
-<div class="form-group">
+
+                    <div class="form-group">
                         <label>Password</label>
                         <input type="password" name="password" required>
                     </div>
