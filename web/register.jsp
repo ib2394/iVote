@@ -128,7 +128,7 @@
             <div class="register-container">
 
                 <div class="register-header">
-                    <div class="logo-circle">🗳️</div>
+                    <div class="logo-circle">🗳</div>
                     <h1>iVote Registration</h1>
                     <p>Create your iVote account</p>
                 </div>
@@ -137,7 +137,7 @@
 
                     <div class="form-group">
                         <label>Full Name</label>
-                        <input type="text" name="userName" required>
+                        <input type="text" name="user_name" required>
                     </div>
 
                     <div class="form-group">
@@ -147,7 +147,7 @@
 
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" name="userPass" required>
+                        <input type="password" name="password" required>
                     </div>
 
                     <div class="form-group">

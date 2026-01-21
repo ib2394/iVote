@@ -23,15 +23,34 @@
 <%@page import="java.time.temporal.ChronoUnit" %>
 <%
     Users currentUser = (Users) session.getAttribute("user");
-    if (currentUser == null || !"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
-        response.sendRedirect("login.jsp");
-        return;
+    String legacyRole = (String) session.getAttribute("role"); // from friend's login.jsp (admin/student/lecturer)
+    String legacyUserName = (String) session.getAttribute("userName");
+
+    // Accept either new auth (Users in session) OR legacy auth (role string in session)
+    if (currentUser == null) {
+        if (legacyRole == null || !"admin".equalsIgnoreCase(legacyRole)) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+    } else {
+        if (!"ADMIN".equalsIgnoreCase(currentUser.getRole())) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
     }
 
     ElectionDAO electionDAO = new ElectionDAO();
     PositionDAO positionDAO = new PositionDAO();
     CandidateDAO candidateDAO = new CandidateDAO();
     UserDAO userDAO = new UserDAO();
+    // If we came from legacy login and the legacy "userName" is actually an email, try to hydrate Users for display/use
+    if (currentUser == null && legacyUserName != null && legacyUserName.indexOf("@") > 0) {
+        Users maybe = userDAO.getUserByEmail(legacyUserName);
+        if (maybe != null) {
+            currentUser = maybe;
+            session.setAttribute("user", currentUser);
+        }
+    }
     VoteDAO voteDAO = new VoteDAO();
 
     Election activeElection = electionDAO.getActiveElection();
@@ -90,7 +109,7 @@
                     <i class="fas fa-user-shield"></i> Admin Panel
                 </h1>
                 <p style="margin: 5px 0 0 0; font-size: 0.9rem; opacity: 0.9;">
-                    Logged in as: <%= currentUser != null ? currentUser.getUser_name() : "Administrator" %>
+                    Logged in as: <%= currentUser != null ? currentUser.getUser_name() : (legacyUserName != null ? legacyUserName : "Administrator") %>
                 </p>
             </div>
             <button class="logout-btn" onclick="logout()">
@@ -137,9 +156,9 @@
             </div>
             
             <div class="admin-actions">
-                <button id="add-candidate-btn" class="btn btn-success">
+                <a id="add-candidate-btn" class="btn btn-success" href="addCandidate.jsp">
                     <i class="fas fa-user-plus"></i> Add New Candidate
-                </button>
+                </a>
                 <a href="CandidateListServlet" class="btn">
                     <i class="fas fa-list"></i> Manage Candidates
                 </a>

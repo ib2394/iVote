@@ -34,12 +34,12 @@ public class Candidates implements Serializable {
         this.candidate_id = candidate_id;
     }
 
-    public int getUser_id() {
+    public int getUserId() {
         return user_id;
     }
-
-    public void setUser_id(int user_id) {
-        this.user_id = user_id;
+    
+    public void setUserId(int userId) {
+        this.user_id = userId;
     }
 
     public int getPosition_id() {

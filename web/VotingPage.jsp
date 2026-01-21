@@ -10,15 +10,35 @@
 <%@page import="java.util.*"%>
 <%
     Users currentUser = (Users) session.getAttribute("user");
-    if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
-        response.sendRedirect("login.jsp");
-        return;
+    String legacyRole = (String) session.getAttribute("role");
+    String legacyUserName = (String) session.getAttribute("userName");
+
+    // Accept either new auth (Users in session) OR legacy auth (role string in session).
+    // NOTE: voting requires a real Users record (user_id). If legacy username looks like an email, hydrate it.
+    if (currentUser == null) {
+        if (legacyRole == null || !"student".equalsIgnoreCase(legacyRole)) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+    } else {
+        if (!"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
     }
 
     ElectionDAO electionDAO = new ElectionDAO();
     PositionDAO positionDAO = new PositionDAO();
     CandidateDAO candidateDAO = new CandidateDAO();
     VoteDAO voteDAO = new VoteDAO();
+    dao.UserDAO userDAO = new dao.UserDAO();
+    if (currentUser == null && legacyUserName != null && legacyUserName.indexOf("@") > 0) {
+        Users maybe = userDAO.getUserByEmail(legacyUserName);
+        if (maybe != null) {
+            currentUser = maybe;
+            session.setAttribute("user", currentUser);
+        }
+    }
 
     Election activeElection = electionDAO.getActiveElection();
     List<Position> positions = null;
@@ -30,7 +50,11 @@
 
     Map<Integer, Boolean> votedPositions = new HashMap<Integer, Boolean>();
     for (Position pos : positions) {
-        votedPositions.put(pos.getPosition_id(), voteDAO.hasVotedForPosition(currentUser.getUser_id(), pos.getPosition_id()));
+        if (currentUser != null) {
+            votedPositions.put(pos.getPosition_id(), voteDAO.hasVotedForPosition(currentUser.getUser_id(), pos.getPosition_id()));
+        } else {
+            votedPositions.put(pos.getPosition_id(), Boolean.FALSE);
+        }
     }
 
     String voteStatus = request.getParameter("vote");
