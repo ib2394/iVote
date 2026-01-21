@@ -1,5 +1,7 @@
 <%@ page language="java" contentType="text/html;charset=UTF-8" %>
 <%@ page import="javax.servlet.http.*, java.io.*" %>
+<%@ page import="java.sql.Connection, java.sql.DriverManager, java.sql.PreparedStatement, java.sql.ResultSet, java.sql.SQLException" %>
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -110,6 +112,7 @@
             }
         </style>
     </head>
+
     <body>
 
         <div class="login-page">
@@ -133,16 +136,6 @@
                         <input type="password" name="password" required>
                     </div>
 
-                    <div class="form-group">
-                        <label>Role</label>
-                        <select name="role" required>
-                            <option value="">Select Role</option>
-                            <option value="student">Student</option>
-                            <option value="lecturer">Lecturer</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-
                     <button type="submit" class="login-btn">Login</button>
                 </form>
 
@@ -155,29 +148,66 @@
                     if ("POST".equalsIgnoreCase(request.getMethod())) {
                         String userName = request.getParameter("userName");
                         String password = request.getParameter("password");
-                        String role = request.getParameter("role");
 
-                        if (userName != null && password != null && role != null) {
+                        if (userName != null && password != null) {
+                            Connection conn = null;
+                            PreparedStatement ps = null;
+                            ResultSet rs = null;
 
-                            if ("admin".equals(role)) {
-                                session.setAttribute("userName", userName);
-                                session.setAttribute("role", "admin");
-                                response.sendRedirect("adminDashboard.html");
+                            try {
+                                Class.forName("org.apache.derby.jdbc.ClientDriver");
+                                conn = DriverManager.getConnection(
+                                        "jdbc:derby://localhost:1527/iVoteDB", "app", "app");
 
-                            } else if ("student".equals(role) || "lecturer".equals(role)){
-                                session.setAttribute("userName", userName);
-                                session.setAttribute("role", role);
-                                response.sendRedirect("homepage.html");
+                                String sql = "SELECT * FROM Users WHERE user_name=? AND password=?";
+                                ps = conn.prepareStatement(sql);
+                                ps.setString(1, userName);
+                                ps.setString(2, password);
 
-                            } else {
-                                out.println("<p style='color:red; text-align:center;'>Invalid login details.</p>");
+                                rs = ps.executeQuery();
+
+                                if (rs.next()) {
+                                    session.setAttribute("user_id", rs.getInt("user_id"));   // 🔑 REQUIRED
+                                    session.setAttribute("userName", rs.getString("user_name"));
+                                    session.setAttribute("role", rs.getString("role"));      // optional
+
+                                    response.sendRedirect("editProfile.jsp");
+                                } else {
+                %>
+                <p style="color:red; text-align:center;">Invalid username or password.</p>
+                <%
+                                }
+
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                out.println("<p style='color:red; text-align:center;'>Error connecting to database.</p>");
+                            } finally {
+                                try {
+                                    if (rs != null) {
+                                        rs.close();
+                                    }
+                                } catch (SQLException e) {
+                                }
+                                try {
+                                    if (ps != null) {
+                                        ps.close();
+                                    }
+                                } catch (SQLException e) {
+                                }
+                                try {
+                                    if (conn != null) {
+                                        conn.close();
+                                    }
+                                } catch (SQLException e) {
+                                }
                             }
+                        } else {
+                            out.println("<p style='color:red; text-align:center;'>Please fill in both fields.</p>");
                         }
                     }
                 %>
 
             </div>
         </div>
-
     </body>
 </html>
