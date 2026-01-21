@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html;charset=UTF-8" %>
-<%@ page import="javax.servlet.http.*, java.io.*" %>
+<%@ page import="java.sql.*" %>
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -61,8 +62,7 @@
                 color: #555;
             }
 
-            .form-group input,
-            .form-group select {
+            .form-group input {
                 width: 100%;
                 padding: 0.8rem;
                 border-radius: 10px;
@@ -70,8 +70,7 @@
                 font-size: 0.95rem;
             }
 
-            .form-group input:focus,
-            .form-group select:focus {
+            .form-group input:focus {
                 outline: none;
                 border-color: #667eea;
             }
@@ -104,25 +103,21 @@
                 text-decoration: none;
                 font-weight: 500;
             }
-
-            .login-footer a:hover {
-                text-decoration: underline;
-            }
         </style>
     </head>
+
     <body>
 
         <div class="login-page">
             <div class="login-container">
 
                 <div class="login-header">
-                    <div class="logo-circle">🗳️</div>
+                    <div class="logo-circle">🗳</div>
                     <h1>iVote Login</h1>
                     <p>Interactive Student Election System</p>
                 </div>
 
                 <form action="login.jsp" method="post">
-
                     <div class="form-group">
                         <label>Username</label>
                         <input type="text" name="userName" required>
@@ -131,16 +126,6 @@
                     <div class="form-group">
                         <label>Password</label>
                         <input type="password" name="password" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Role</label>
-                        <select name="role" required>
-                            <option value="">Select Role</option>
-                            <option value="student">Student</option>
-                            <option value="lecturer">Lecturer</option>
-                            <option value="admin">Admin</option>
-                        </select>
                     </div>
 
                     <button type="submit" class="login-btn">Login</button>
@@ -153,24 +138,59 @@
 
                 <%
                     if ("POST".equalsIgnoreCase(request.getMethod())) {
+
                         String userName = request.getParameter("userName");
                         String password = request.getParameter("password");
-                        String role = request.getParameter("role");
 
-                        if (userName != null && password != null && role != null) {
+                        Connection conn = null;
+                        PreparedStatement ps = null;
+                        ResultSet rs = null;
 
-                            if ("admin".equals(role)) {
-                                session.setAttribute("userName", userName);
-                                session.setAttribute("role", "admin");
-                                response.sendRedirect("adminDashboard.html");
+                        try {
+                            Class.forName("org.apache.derby.jdbc.ClientDriver");
+                            conn = DriverManager.getConnection(
+                                    "jdbc:derby://localhost:1527/iVoteDB", "app", "app");
+                            String sql = "SELECT USER_ID, USER_NAME, ROLE FROM USERS WHERE USER_NAME=? AND PASSWORD=?";
+                            ps = conn.prepareStatement(sql);
+                            ps.setString(1, userName);
+                            ps.setString(2, password);
 
-                            } else if ("student".equals(role) || "lecturer".equals(role)){
-                                session.setAttribute("userName", userName);
-                                session.setAttribute("role", role);
-                                response.sendRedirect("homepage.html");
+                            rs = ps.executeQuery();
 
+                            if (rs.next()) {
+                                // ✅ REQUIRED SESSION VALUES
+                                session.setAttribute("user_id", rs.getInt("USER_ID"));
+                                session.setAttribute("userName", rs.getString("USER_NAME"));
+                                session.setAttribute("role", rs.getString("ROLE"));
+
+                                response.sendRedirect("editProfile.jsp");
+                                return;
                             } else {
-                                out.println("<p style='color:red; text-align:center;'>Invalid login details.</p>");
+                %>
+                <p style="color:red; text-align:center;">Invalid username or password.</p>
+                <%
+                            }
+                        } catch (Exception e) {
+                            out.println("<p style='color:red; text-align:center;'>Login error.</p>");
+                            e.printStackTrace();
+                        } finally {
+                            if (rs != null) {
+                                try {
+                                    rs.close();
+                                } catch (Exception e) {
+                                }
+                            }
+                            if (ps != null) {
+                                try {
+                                    ps.close();
+                                } catch (Exception e) {
+                                }
+                            }
+                            if (conn != null) {
+                                try {
+                                    conn.close();
+                                } catch (Exception e) {
+                                }
                             }
                         }
                     }

@@ -1,8 +1,15 @@
 <%@ page language="java" contentType="text/html;charset=UTF-8" %>
-<%@ page import="javax.servlet.http.*, java.io.*" %>
-<%@ page import="java.sql.*" %>
-<%@page import="java.nio.file.*"%>
-<%@page import="javax.servlet.http.Part"%>
+
+<%@ page import="java.io.File" %>
+<%@ page import="java.sql.Connection" %>
+<%@ page import="java.sql.PreparedStatement" %>
+<%@ page import="java.sql.DriverManager" %>
+<%@ page import="java.sql.ResultSet" %>
+
+<%@ page import="javax.servlet.http.Part" %>
+<%@ page import="java.nio.file.Paths" %>
+
+
 
 <!DOCTYPE html>
 <html>
@@ -121,39 +128,25 @@
             <div class="register-container">
 
                 <div class="register-header">
-                    <div class="logo-circle">🗳️</div>
+                    <div class="logo-circle">🗳</div>
                     <h1>iVote Registration</h1>
                     <p>Create your iVote account</p>
                 </div>
 
-                <form action="register.jsp" method="post" enctype="multipart/form-data">
+                <form action="RegisterServlet" method="post">
 
                     <div class="form-group">
                         <label>Full Name</label>
-                        <input type="text" name="userName" required>
+                        <input type="text" name="user_name" required>
                     </div>
 
                     <div class="form-group">
                         <label>Email</label>
                         <input type="email" name="email" required>
                     </div>
-
-                    <div class="form-group">
-                        <label>Faculty</label>
-                        <select name="program" required>
-                            <option value="CDCS230">---Select Program---</option>
-                            <option value="CDCS230">CDCS230</option>
-                            <option value="CDCS240">CDCS240</option>
-                            <option value="CDCS241">CDCS241</option>
-                            <option value="CDCS246">CDCS246</option>
-                            <option value="CDCS247">CDCS247</option>
-                            <option value="CDCS248">CDCS248</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
+<div class="form-group">
                         <label>Password</label>
-                        <input type="password" name="userPass" required>
+                        <input type="password" name="password" required>
                     </div>
 
                     <div class="form-group">
@@ -166,8 +159,16 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Profile Picture</label>
-                        <input type="file" name="profilePic" accept="image/*" required>
+                        <label>Faculty</label>
+                        <select name="faculty" required>
+                            <option value="">Select Faculty</option>
+                            <option value="CDCS230">CDCS230</option>
+                            <option value="CDCS240">CDCS240</option>
+                            <option value="CDCS241">CDCS241</option>
+                            <option value="CDCS246">CDCS246</option>
+                            <option value="CDCS247">CDCS247</option>
+                            <option value="CDCS248">CDCS248</option>
+                        </select>
                     </div>
 
                     <button type="submit" class="register-btn">Register</button>
@@ -177,70 +178,6 @@
                     Already have an account?
                     <a href="login.jsp">Login here</a>
                 </div>
-
-                <%
-                    if ("POST".equalsIgnoreCase(request.getMethod())) {
-
-                        String fullName = request.getParameter("userName");
-                        String email = request.getParameter("email");
-                        String faculty = request.getParameter("faculty");
-                        String password = request.getParameter("userPass");
-                        String role = request.getParameter("userCategory");
-
-                        // Handle profile picture upload
-                        Part filePart = request.getPart("profilePic");
-                        String fileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
-
-                        // Change this path if needed
-                        String uploadPath = application.getRealPath("/") + "profile_pics";
-                        File uploadDir = new File(uploadPath);
-                        if (!uploadDir.exists()) {
-                            uploadDir.mkdir();
-                        }
-
-                        String filePath = uploadPath + File.separator + fileName;
-                        filePart.write(filePath);
-
-                        Connection conn = null;
-                        PreparedStatement stmt = null;
-
-                        try {
-                            conn = DriverManager.getConnection("jdbc:derby://localhost:1527/iVoteDB", "app", "app");
-
-                            String sql = "INSERT INTO Users " + "(full_name, email, faculty, password, role, profile_pic) "
-                                    + "VALUES (?, ?, ?, ?, ?, ?)";
-
-                            stmt = conn.prepareStatement(sql);
-                            stmt.setString(1, fullName);
-                            stmt.setString(2, email);
-                            stmt.setString(3, faculty);
-                            stmt.setString(4, password);
-                            stmt.setString(5, role);
-                            stmt.setString(6, fileName);
-
-                            stmt.executeUpdate();
-
-                            out.println("<p style='color:green; text-align:center;'>");
-                            out.println("Registration successful!<br>");
-                            out.println("<a href='login.jsp'>Proceed to Login</a>");
-                            out.println("</p>");
-
-                        } catch (SQLException e) {
-                            out.println("<p style='color:red; text-align:center;'>");
-                            out.println("Error: " + e.getMessage());
-                            out.println("</p>");
-                        } finally {
-                            if (stmt != null) {
-                                stmt.close();
-                            }
-                            if (conn != null) {
-                                conn.close();
-                            }
-                        }
-
-                    }
-                %>
-
             </div>
         </div>
 
