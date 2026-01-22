@@ -91,7 +91,7 @@
                 <a href="adminDashboard.jsp" class="nav-btn">
                     <i class="fas fa-arrow-left"></i> Back to Dashboard
                 </a>
-                <a href="viewElections.jsp" class="nav-btn">
+                <a href="CandidateListServlet" class="nav-btn">
                     <i class="fas fa-list"></i> View Elections
                 </a>
             </div>

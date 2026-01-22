@@ -21,9 +21,7 @@ public class RegisterServlet extends HttpServlet {
         String faculty = request.getParameter("faculty");  
         
         // For new registration: 
-        // If status means "voting status" - set to "not_voted"
-        // If status means "account status" - set to "active"
-        String status = "not_voted"; // or "active" depending on your system
+        String status = "active"; // Account status
 
         // Debugging statements
         System.out.println("=== Registration Debug ===");
@@ -43,19 +41,34 @@ public class RegisterServlet extends HttpServlet {
 
         // Check if any required parameter is missing or empty
         if (user_name == null || user_name.trim().isEmpty()) {
-            response.getWriter().println("<p style='color:red;'>Username is required!</p>");
+            request.setAttribute("errorMessage", "Username is required!");
+            request.getRequestDispatcher("register.jsp").forward(request, response);
             return;
         }
         if (email == null || email.trim().isEmpty()) {
-            response.getWriter().println("<p style='color:red;'>Email is required!</p>");
+            request.setAttribute("errorMessage", "Email is required!");
+            request.getRequestDispatcher("register.jsp").forward(request, response);
             return;
         }
         if (password == null || password.trim().isEmpty()) {
-            response.getWriter().println("<p style='color:red;'>Password is required!</p>");
+            request.setAttribute("errorMessage", "Password is required!");
+            request.getRequestDispatcher("register.jsp").forward(request, response);
             return;
         }
         if (faculty == null || faculty.trim().isEmpty()) {
-            response.getWriter().println("<p style='color:red;'>Faculty is required!</p>");
+            request.setAttribute("errorMessage", "Faculty is required!");
+            request.getRequestDispatcher("register.jsp").forward(request, response);
+            return;
+        }
+        
+        // Validate role - only allow admin, student, or lecturer
+        if (role == null || role.trim().isEmpty()) {
+            role = "student"; // Default to student
+        } else if (!"admin".equalsIgnoreCase(role) && 
+                   !"student".equalsIgnoreCase(role) && 
+                   !"lecturer".equalsIgnoreCase(role)) {
+            request.setAttribute("errorMessage", "Invalid role selected. Please choose student, lecturer, or admin.");
+            request.getRequestDispatcher("register.jsp").forward(request, response);
             return;
         }
 
@@ -66,21 +79,17 @@ public class RegisterServlet extends HttpServlet {
             conn = DriverManager.getConnection(
                      "jdbc:derby://localhost:1527/iVoteDB", "app", "app");
             
-            // Check if username already exists
+            // Check if username or email already exists
             PreparedStatement checkStmt = conn.prepareStatement(
-                "SELECT user_id FROM USERS WHERE user_name = ? OR email = ?");
+                "SELECT user_id FROM USERS WHERE LOWER(user_name) = LOWER(?) OR LOWER(email) = LOWER(?)");
             checkStmt.setString(1, user_name.trim());
             checkStmt.setString(2, email.trim());
             ResultSet rs = checkStmt.executeQuery();
             
             if (rs.next()) {
-                response.getWriter().println("<p style='color:red;'>Username or email already exists!</p>");
+                request.setAttribute("errorMessage", "Username or email already exists!");
+                request.getRequestDispatcher("register.jsp").forward(request, response);
                 return;
-            }
-            
-            // Default role to "user" if not specified
-            if (role == null || role.trim().isEmpty()) {
-                role = "user";
             }
             
             // Insert new user
@@ -90,23 +99,32 @@ public class RegisterServlet extends HttpServlet {
             stmt.setString(1, user_name.trim());  // USER_NAME
             stmt.setString(2, password.trim());   // PASSWORD (in real app, hash this!)
             stmt.setString(3, email.trim());      // EMAIL
-            stmt.setString(4, role.trim());       // ROLE
-            stmt.setString(5, status);            // STATUS ("not_voted" for new users)
+            stmt.setString(4, role.toLowerCase()); // ROLE (convert to lowercase for consistency)
+            stmt.setString(5, status);            // STATUS ("active" for new users)
             stmt.setString(6, faculty.trim());    // FACULTY
 
             int rowsInserted = stmt.executeUpdate();
             
             if (rowsInserted > 0) {
-                System.out.println("User registered successfully: " + user_name);
-                // Redirect to login page with success message
-                response.sendRedirect("login.jsp?message=Registration successful! Please login.");
+                System.out.println("User registered successfully: " + user_name + " with role: " + role);
+                
+                // For admin registrations, you might want to redirect differently
+                if ("admin".equalsIgnoreCase(role)) {
+                    request.setAttribute("successMessage", "Admin account created successfully!");
+                    request.getRequestDispatcher("register.jsp").forward(request, response);
+                } else {
+                    // For student/lecturer, redirect to login
+                    response.sendRedirect("login.jsp?message=Registration successful! Please login.");
+                }
             } else {
-                response.getWriter().println("<p style='color:red;'>Registration failed. Please try again.</p>");
+                request.setAttribute("errorMessage", "Registration failed. Please try again.");
+                request.getRequestDispatcher("register.jsp").forward(request, response);
             }
 
         } catch (SQLException e) {
             e.printStackTrace();
-            response.getWriter().println("<p style='color:red;'>Database Error: " + e.getMessage() + "</p>");
+            request.setAttribute("errorMessage", "Database Error: " + e.getMessage());
+            request.getRequestDispatcher("register.jsp").forward(request, response);
         } finally {
             // Close resources
             try { if (stmt != null) stmt.close(); } catch (SQLException e) { e.printStackTrace(); }

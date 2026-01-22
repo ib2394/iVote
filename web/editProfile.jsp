@@ -6,113 +6,10 @@
     <head>
         <meta charset="UTF-8">
         <title>Edit Profile | iVote</title>
-
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                margin: 0;
-                min-height: 100vh;
-            }
-
-            .page {
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .container {
-                background: white;
-                border-radius: 20px;
-                padding: 3rem;
-                width: 100%;
-                max-width: 420px;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            }
-
-            .header {
-                text-align: center;
-                margin-bottom: 2rem;
-            }
-
-            .header h1 {
-                color: #667eea;
-                margin-bottom: 0.5rem;
-            }
-
-            .header p {
-                color: #666;
-                font-size: 0.95rem;
-            }
-
-            .form-group {
-                margin-bottom: 1.5rem;
-            }
-
-            .form-group label {
-                display: block;
-                margin-bottom: 0.4rem;
-                font-weight: 500;
-                color: #555;
-            }
-
-            .form-group input,
-            .form-group select {
-                width: 100%;
-                padding: 0.8rem;
-                border-radius: 10px;
-                border: 2px solid #e0e0e0;
-                font-size: 0.95rem;
-            }
-
-            .form-group input:focus,
-            .form-group select:focus {
-                outline: none;
-                border-color: #667eea;
-            }
-
-            .btn {
-                width: 100%;
-                padding: 0.9rem;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border: none;
-                border-radius: 10px;
-                font-size: 1rem;
-                font-weight: 600;
-                cursor: pointer;
-            }
-
-            .btn:hover {
-                opacity: 0.9;
-            }
-
-            .footer {
-                margin-top: 1.5rem;
-                text-align: center;
-                font-size: 0.9rem;
-            }
-
-            .footer a {
-                color: #667eea;
-                text-decoration: none;
-                font-weight: 500;
-            }
-
-            .footer a:hover {
-                text-decoration: underline;
-            }
-
-            .error {
-                color: red;
-                text-align: center;
-                margin-bottom: 1rem;
-            }
-        </style>
+        <link rel="stylesheet" href="style.css">
     </head>
 
-    <body>
+    <body class="login-body"> <!-- Added login-body class -->
 
         <%
             if (session == null || session.getAttribute("user_id") == null) {
@@ -189,11 +86,16 @@
                     stmt.setInt(i, userId);
                     stmt.executeUpdate();
 
-                    response.sendRedirect("homepage.jsp?message=Profile updated");
+                    // Update session attributes
+                    session.setAttribute("user_name", newUserName);
+                    session.setAttribute("role", newRole);
+                    session.setAttribute("faculty", newFaculty);
+                    
+                    response.sendRedirect("homepage.jsp?message=Profile updated successfully!");
                     return;
 
                 } catch (Exception e) {
-                    message = "Update failed.";
+                    message = "Update failed: " + e.getMessage();
                 } finally {
                     if (stmt != null) {
                         stmt.close();
@@ -205,20 +107,20 @@
             }
         %>
 
-        <div class="page">
-            <div class="container">
+        <div class="login-page"> <!-- Changed from "page" to "login-page" -->
+            <div class="login-container"> <!-- Changed from "container" to "login-container" -->
 
-                <div class="header">
+                <div class="login-header">
+                    <div class="logo-circle">👤</div> <!-- Changed from "header" to "login-header" -->
                     <h1>Edit Profile</h1>
-                    <p>Update your iVote account</p>
+                    <p>Update your iVote account information</p>
                 </div>
 
                 <% if (!message.isEmpty()) {%>
-                <div class="error"><%= message%></div>
+                <div class="login-error"><%= message%></div> <!-- Added error class -->
                 <% }%>
 
                 <form method="post">
-
                     <div class="form-group">
                         <label>Full Name</label>
                         <input type="text" name="userName" value="<%= userName%>" required>
@@ -253,13 +155,16 @@
                     <div class="form-group">
                         <label>New Password</label>
                         <input type="password" name="password" placeholder="Leave blank to keep current">
+                        <small style="display: block; margin-top: 0.4rem; font-size: 0.8rem; color: #888; font-style: italic;">
+                            Enter a new password only if you want to change it
+                        </small>
                     </div>
 
-                    <button type="submit" class="btn">Update Profile</button>
+                    <button type="submit" class="login-btn">Update Profile</button> <!-- Changed from "btn" to "login-btn" -->
                 </form>
 
-                <div class="footer">
-                    <a href="homepage.jsp">Cancel</a>
+                <div class="login-footer"> <!-- Changed from "footer" to "login-footer" -->
+                    <a href="homepage.jsp">← Back to Homepage</a>
                 </div>
 
             </div>

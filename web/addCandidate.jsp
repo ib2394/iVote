@@ -71,20 +71,6 @@
                 </div>
             </c:if>
 
-            <div class="info-card">
-                <h3><i class="fas fa-user-shield"></i> Admin Information</h3>
-                <div class="user-info-grid">
-                    <div class="info-item">
-                        <div class="info-label">Admin ID</div>
-                        <div class="info-value"><%= user_id%></div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Election ID</div>
-                        <div class="info-value"><%= election_id%></div>
-                    </div>
-                </div>
-            </div>
-
             <form action="AddCandidateServlet" method="post" id="candidateForm">
                 <input type="hidden" name="user_id" value="<%= user_id%>">
                 <input type="hidden" name="election_id" value="<%= election_id%>">

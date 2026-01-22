@@ -148,4 +148,27 @@ public class UserDAO {
         }
         return null;
     }
+
+    public Map<String, String> getUserProfile(int userId) {
+        Map<String, String> profile = new HashMap<>();
+            
+            String sql = "SELECT user_name, role, faculty, email FROM Users WHERE user_id = ?";
+            try (Connection conn = DBConnection.createConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setInt(1, userId);
+                ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                profile.put("user_name", rs.getString("user_name"));
+                profile.put("role", rs.getString("role"));
+                profile.put("faculty", rs.getString("faculty"));
+                profile.put("email", rs.getString("email"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return profile;
+    }
 }

@@ -5,79 +5,40 @@ import util.DBConnection;
 import bean.CandidateView;
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class CandidateDAO {
 
-    // Method 1: Get candidate views by election (UPDATED - removed user_id)
-    public List<CandidateView> getCandidateViewsByElection(int electionId) {
-        List<CandidateView> views = new ArrayList<>();
-        Connection conn = null;
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
+    // In CandidateDAO.java
+    public List<Map<String, String>> getCandidatesSimple(int electionId) {
+        List<Map<String, String>> candidates = new ArrayList<>();
+        String sql = "SELECT candidate_id, candidate_name, faculty, email, manifesto "
+                + "FROM CANDIDATES WHERE election_id = ?";
 
-        try {
-            conn = DBConnection.createConnection();
+        try (Connection conn = DriverManager.getConnection("jdbc:derby://localhost:1527/iVoteDB", "app", "app");
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            String query;
-            if (electionId == 0) {
-                query = "SELECT c.CANDIDATE_ID, c.CANDIDATE_NAME, c.FACULTY, "
-                        + "c.EMAIL, c.MANIFESTO, c.ELECTION_ID, "
-                        + "e.ELECTION_NAME "  // Removed: u.USER_NAME
-                        + "FROM CANDIDATES c "
-                        + "LEFT JOIN ELECTION e ON c.ELECTION_ID = e.ELECTION_ID "
-                        + "ORDER BY c.CANDIDATE_ID";
-            } else {
-                query = "SELECT c.CANDIDATE_ID, c.CANDIDATE_NAME, c.FACULTY, "
-                        + "c.EMAIL, c.MANIFESTO, c.ELECTION_ID, "
-                        + "e.ELECTION_NAME "  // Removed: u.USER_NAME
-                        + "FROM CANDIDATES c "
-                        + "LEFT JOIN ELECTION e ON c.ELECTION_ID = e.ELECTION_ID "
-                        + "WHERE c.ELECTION_ID = ? "
-                        + "ORDER BY c.CANDIDATE_ID";
-            }
-
-            stmt = conn.prepareStatement(query);
-
-            if (electionId != 0) {
-                stmt.setInt(1, electionId);
-            }
-
-            rs = stmt.executeQuery();
+            pstmt.setInt(1, electionId);
+            ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                CandidateView view = new CandidateView();
-                view.setCandidate_id(rs.getInt("CANDIDATE_ID"));
-                view.setCandidate_name(rs.getString("CANDIDATE_NAME"));
-                view.setFaculty(rs.getString("FACULTY"));
-                view.setEmail(rs.getString("EMAIL"));
-                view.setManifesto(rs.getString("MANIFESTO"));
-                view.setElection_name(rs.getString("ELECTION_NAME"));
-                view.setElection_id(rs.getInt("ELECTION_ID"));
-
-                views.add(view);
-                System.out.println("DEBUG: Added candidate view - " + view.getCandidate_name());
+                Map<String, String> candidate = new HashMap<>();
+                candidate.put("candidate_id", String.valueOf(rs.getInt("candidate_id")));
+                candidate.put("candidate_name", rs.getString("candidate_name"));
+                candidate.put("faculty", rs.getString("faculty"));
+                candidate.put("email", rs.getString("email"));
+                candidate.put("manifesto", rs.getString("manifesto"));
+                candidates.add(candidate);
             }
+
+            System.out.println("CandidateDAO: Found " + candidates.size() + " candidates for election " + electionId);
 
         } catch (SQLException e) {
-            System.err.println("Error in getCandidateViewsByElection: " + e.getMessage());
+            System.out.println("CandidateDAO Error: " + e.getMessage());
             e.printStackTrace();
-        } finally {
-            try {
-                if (rs != null) {
-                    rs.close();
-                }
-                if (stmt != null) {
-                    stmt.close();
-                }
-                if (conn != null) {
-                    conn.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
         }
-        return views;
+
+        return candidates;
     }
 
     // Method untuk delete candidate
@@ -118,9 +79,8 @@ public class CandidateDAO {
 
         try {
             conn = DBConnection.createConnection();
-            conn.setAutoCommit(false); // Start transaction
+            conn.setAutoCommit(false);
 
-            // 1. First check if candidate exists
             String checkQuery = "SELECT COUNT(*) FROM CANDIDATES WHERE candidate_id = ?";
             pstmt = conn.prepareStatement(checkQuery);
             pstmt.setInt(1, candidateId);
@@ -130,8 +90,6 @@ public class CandidateDAO {
                 System.out.println("DEBUG: Candidate ID " + candidateId + " does not exist.");
                 return false;
             }
-
-            // 2. Check if candidate has votes (optional, untuk informative message)
             String checkVotesQuery = "SELECT COUNT(*) FROM VOTE WHERE candidate_id = ?";
             pstmt = conn.prepareStatement(checkVotesQuery);
             pstmt.setInt(1, candidateId);
@@ -142,14 +100,12 @@ public class CandidateDAO {
                         + rs.getInt(1) + " votes. Proceeding with delete...");
             }
 
-            // 3. Delete the candidate
             String deleteQuery = "DELETE FROM CANDIDATES WHERE candidate_id = ?";
             pstmt = conn.prepareStatement(deleteQuery);
             pstmt.setInt(1, candidateId);
 
             int rowsAffected = pstmt.executeUpdate();
 
-            // Commit transaction
             conn.commit();
 
             boolean result = rowsAffected > 0;
@@ -191,14 +147,34 @@ public class CandidateDAO {
         }
     }
 
-    // REMOVED: deleteCandidateByUserId method (no longer needed since we removed user_id)
+    public List<CandidateView> getCandidateViewsByElection(int election_id) {
+        List<CandidateView> candidates = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection("jdbc:derby://localhost:1527/iVoteDB", "app", "app")) {
+            String sql = "SELECT * FROM CANDIDATES WHERE ELECTION_ID = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, election_id);
+            ResultSet rs = ps.executeQuery();
 
-    // Method alternatif untuk semua candidate views
-    public List<CandidateView> getAllCandidateViews() {
-        return getCandidateViewsByElection(0); // 0 untuk semua election
+            while (rs.next()) {
+                CandidateView candidate = new CandidateView();
+                candidate.setCandidate_id(rs.getInt("CANDIDATE_ID"));
+                candidate.setUser_name(rs.getString("USER_NAME"));
+                candidate.setEmail(rs.getString("EMAIL"));
+                candidate.setFaculty(rs.getString("FACULTY"));
+                candidate.setManifesto(rs.getString("MANIFESTO"));
+                candidate.setElection_id(rs.getInt("ELECTION_ID"));
+                candidates.add(candidate);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return candidates;
     }
 
-    // Method 2: Get all candidates (UPDATED - removed user_id)
+    public List<CandidateView> getAllCandidateViews() {
+        return getCandidateViewsByElection(0); //0 meaning is all elections
+    }
+
     public List<Candidates> getAllCandidates() {
         List<Candidates> candidates = new ArrayList<>();
 
@@ -343,7 +319,7 @@ public class CandidateDAO {
         List<CandidateView> result = new ArrayList<>();
         String sql = "SELECT c.candidate_id, c.candidate_name, c.faculty, "
                 + "c.email, c.manifesto, c.election_id, "
-                + "e.election_name, "  // Removed: u.user_name
+                + "e.election_name, " // Removed: u.user_name
                 + "COALESCE(v.vote_count, 0) as vote_count "
                 + "FROM CANDIDATES c "
                 + "LEFT JOIN ELECTION e ON c.election_id = e.election_id "

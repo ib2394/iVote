@@ -1,14 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ page import="java.sql.*, java.util.*" %>
 <%@ page import="java.sql.*, java.util.*, java.sql.Date" %>
-<%@page import="bean.Users"%>
-<%@page import="bean.Election"%>
-<%@page import="bean.CandidateView"%>
-<%@page import="dao.ElectionDAO"%>
-<%@page import="dao.CandidateDAO"%>
-<%@page import="dao.VoteDAO"%>
-<%@page import="dao.UserDAO"%>
-<%@page import="java.util.*"%>
+<%@page import="bean.*"%>
+<%@page import="dao.*"%>
 <%
     // Check for user in session (using either new or legacy format)
     Integer user_id = (Integer) session.getAttribute("user_id");
@@ -17,28 +10,11 @@
     String faculty = (String) session.getAttribute("faculty");
     String email = (String) session.getAttribute("email");
 
-    // If no user_id in session, check for old format
-    if (user_id == null) {
-        Users currentUser = (Users) session.getAttribute("user");
-        if (currentUser != null) {
-            user_id = currentUser.getUser_id();
-            user_name = currentUser.getUser_name();
-            role = currentUser.getRole();
-        }
-    }
-
-    // If still no user_id, redirect to login
-    if (user_id == null) {
+    if (user_id == null || !"student".equalsIgnoreCase(role) && !"lecturer".equalsIgnoreCase(role)) {
         response.sendRedirect("login.jsp");
         return;
     }
-
-    // Check if user is a student
-    if (!"student".equalsIgnoreCase(role) && !"lecturer".equalsIgnoreCase(role)) {
-        response.sendRedirect("login.jsp");
-        return;
-    }
-
+    
     // Get election_id from parameter
     String electionIdParam = request.getParameter("election_id");
     int electionId = 0;
@@ -56,6 +32,26 @@
     ElectionDAO electionDAO = new ElectionDAO();
     CandidateDAO candidateDAO = new CandidateDAO();
     VoteDAO voteDAO = new VoteDAO();
+    UserDAO userDAO = new UserDAO();
+    Map<String, String> userProfile = userDAO.getUserProfile(user_id);
+    
+    // Update variables
+    user_name = userProfile.get("user_name") != null ? userProfile.get("user_name") : user_name;
+    role = userProfile.get("role") != null ? userProfile.get("role") : role;
+    faculty = userProfile.get("faculty");
+    email = userProfile.get("email");
+    
+    // Update session
+    session.setAttribute("user_name", user_name);
+    session.setAttribute("role", role);
+    session.setAttribute("faculty", faculty);
+    session.setAttribute("email", email);
+    
+    System.out.println("DEBUG: Fresh user data loaded:");
+    System.out.println("  Name: " + user_name);
+    System.out.println("  Role: " + role);
+    System.out.println("  Faculty: " + faculty);
+    System.out.println("  Email: " + email);
 
     // Get the election
     Election election = null;
@@ -89,332 +85,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>iVote: Interactive Student Election System</title>
-
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: #f5f5f5;
-                margin: 0;
-                min-height: 100vh;
-            }
-
-            /* Navbar */
-            .navbar {
-                background: linear-gradient(to right, #6a0dad, #3498db);
-                color: white;
-                padding: 1rem 2rem;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                position: sticky;
-                top: 0;
-                z-index: 1000;
-            }
-
-            .navbar-brand {
-                font-size: 1.8rem;
-                font-weight: bold;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-
-            .navbar-user {
-                display: flex;
-                align-items: center;
-                gap: 20px;
-            }
-
-            .user-name {
-                font-weight: 500;
-                font-size: 1.1rem;
-            }
-
-            .logout-btn {
-                background-color: rgba(255, 255, 255, 0.2);
-                color: white;
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                padding: 8px 20px;
-                border-radius: 25px;
-                cursor: pointer;
-                font-weight: 500;
-                transition: all 0.3s ease;
-                text-decoration: none;
-                display: inline-block;
-            }
-
-            .logout-btn:hover {
-                background-color: rgba(255, 255, 255, 0.3);
-                transform: translateY(-2px);
-            }
-
-            .container {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 2rem;
-            }
-
-            .page-title {
-                text-align: center;
-                color: #6a0dad;
-                margin-bottom: 2.5rem;
-                font-size: 2.2rem;
-                position: relative;
-                padding-bottom: 15px;
-            }
-
-            .page-title::after {
-                content: '';
-                position: absolute;
-                bottom: 0;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 100px;
-                height: 4px;
-                background: linear-gradient(to right, #6a0dad, #3498db);
-                border-radius: 2px;
-            }
-
-            /* Profile Section */
-            .profile-section {
-                background: white;
-                border-radius: 15px;
-                padding: 2rem;
-                margin-bottom: 3rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                position: relative;
-                border-left: 5px solid #6a0dad;
-            }
-
-            .section-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 1.5rem;
-            }
-
-            .section-title {
-                font-size: 1.5rem;
-                color: #333;
-                margin: 0;
-            }
-
-            .edit-btn {
-                background: linear-gradient(to right, #6a0dad, #3498db);
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 25px;
-                cursor: pointer;
-                font-weight: 500;
-                font-size: 0.9rem;
-                transition: all 0.3s ease;
-                text-decoration: none;
-                display: inline-block;
-            }
-
-            .edit-btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(106, 13, 173, 0.3);
-            }
-
-            .profile-info {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 1.5rem;
-            }
-
-            .info-item {
-                background: #f8f9ff;
-                padding: 1.2rem;
-                border-radius: 10px;
-                border: 1px solid #e0e0ff;
-            }
-
-            .info-label {
-                display: block;
-                font-size: 0.9rem;
-                color: #666;
-                margin-bottom: 0.5rem;
-                font-weight: 500;
-            }
-
-            .info-value {
-                font-size: 1.1rem;
-                color: #333;
-                font-weight: 600;
-            }
-
-            /* Elections Section */
-            .elections-section {
-                background: white;
-                border-radius: 15px;
-                padding: 2rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                border-left: 5px solid #3498db;
-                margin-bottom: 2rem;
-            }
-
-            .elections-title {
-                font-size: 1.5rem;
-                color: #333;
-                margin-bottom: 1.5rem;
-            }
-
-            .elections-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-                gap: 1.5rem;
-            }
-
-            .election-card {
-                background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-                border-radius: 12px;
-                padding: 1.5rem;
-                border: 2px solid #e0e0e0;
-                transition: all 0.3s ease;
-                cursor: pointer;
-            }
-
-            .election-card:hover {
-                transform: translateY(-5px);
-                border-color: #9b59b6;
-                box-shadow: 0 8px 16px rgba(106, 13, 173, 0.1);
-            }
-
-            .election-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                margin-bottom: 1rem;
-            }
-
-            .election-name {
-                font-size: 1.2rem;
-                color: #333;
-                margin: 0;
-                flex: 1;
-            }
-
-            .election-status {
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 0.8rem;
-                font-weight: 600;
-                text-transform: uppercase;
-            }
-
-            .status-open {
-                background-color: #d4edda;
-                color: #155724;
-            }
-
-            .status-closed {
-                background-color: #f8d7da;
-                color: #721c24;
-            }
-
-            .status-upcoming {
-                background-color: #fff3cd;
-                color: #856404;
-            }
-
-            .election-details {
-                margin: 1rem 0;
-            }
-
-            .election-detail {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 0.5rem;
-                padding-bottom: 0.5rem;
-                border-bottom: 1px dashed #e0e0e0;
-            }
-
-            .detail-label {
-                font-weight: 500;
-                color: #666;
-            }
-
-            .detail-value {
-                color: #333;
-            }
-
-            /* Vote Button */
-            .vote-btn {
-                background: linear-gradient(to right, #3498db, #5dade2);
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 25px;
-                cursor: pointer;
-                font-weight: 500;
-                margin-top: 1rem;
-                width: 100%;
-                transition: all 0.3s ease;
-                text-decoration: none;
-                display: block;
-                text-align: center;
-            }
-
-            .vote-btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 12px rgba(52, 152, 219, 0.2);
-            }
-
-            .vote-btn:disabled {
-                background: #cccccc;
-                cursor: not-allowed;
-                transform: none;
-                box-shadow: none;
-            }
-
-            /* Message styles */
-            .message {
-                padding: 1rem;
-                border-radius: 8px;
-                margin-bottom: 1.5rem;
-                text-align: center;
-            }
-
-            .success-message {
-                background: #d4edda;
-                color: #155724;
-                border: 1px solid #c3e6cb;
-            }
-
-            .error-message {
-                background: #f8d7da;
-                color: #721c24;
-                border: 1px solid #f5c6cb;
-            }
-
-            /* Role-specific styles */
-            .role-badge {
-                display: inline-block;
-                padding: 3px 10px;
-                border-radius: 15px;
-                font-size: 0.8rem;
-                font-weight: 600;
-                margin-left: 10px;
-            }
-
-            .role-admin {
-                background: linear-gradient(to right, #ff416c, #ff4b2b);
-                color: white;
-            }
-
-            .role-student {
-                background: linear-gradient(to right, #36d1dc, #5b86e5);
-                color: white;
-            }
-
-            .role-lecturer {
-                background: linear-gradient(to right, #f46b45, #eea849);
-                color: white;
-            }
-        </style>
+        <link rel="stylesheet" href="style.css">
     </head>
     <body>
 

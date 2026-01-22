@@ -151,36 +151,6 @@
                 <p>Manage candidates, view results, and monitor the voting process</p>
             </div>
 
-            <div class="dashboard-cards">
-                <div class="dashboard-card">
-                    <div class="card-icon"><i class="fas fa-users"></i></div>
-                    <div class="stats"><%= totalCandidates%></div>
-                    <h3 class="card-title">Total Candidates</h3>
-                    <p class="card-subtitle">Across all elections</p>
-                </div>
-
-                <div class="dashboard-card">
-                    <div class="card-icon"><i class="fas fa-vote-yea"></i></div>
-                    <div class="stats"><%= totalVotes%></div>
-                    <h3 class="card-title">Total Votes</h3>
-                    <p class="card-subtitle"><%= activeElection != null ? "Active election only" : "All time"%></p>
-                </div>
-
-                <div class="dashboard-card">
-                    <div class="card-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stats"><%= turnout%>%</div>
-                    <h3 class="card-title">Voter Turnout</h3>
-                    <p class="card-subtitle">Eligible students</p>
-                </div>
-
-                <div class="dashboard-card">
-                    <div class="card-icon"><i class="fas fa-clock"></i></div>
-                    <div class="stats"><%= timeRemaining%></div>
-                    <h3 class="card-title">Time Remaining</h3>
-                    <p class="card-subtitle"><%= activeElection != null ? activeElection.getElection_name() : "No active election"%></p>
-                </div>
-            </div>
-
             <div class="admin-actions">
                 <a href="CandidateListServlet" class="btn">
                     <i class="fas fa-list"></i> Manage Candidates
@@ -252,10 +222,6 @@
                                 <span style="color: #666; font-size: 0.9rem;">End Date:</span>
                                 <span style="font-weight: 500;"><%= election.getEnd_date()%></span>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span style="color: #666; font-size: 0.9rem;">Election ID:</span>
-                                <span style="font-weight: 500; color: #1e3c72;">#<%= election.getElection_id()%></span>
-                            </div>
                         </div>
 
                         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
@@ -279,33 +245,6 @@
                     <% } %>
                 </div>
                 <% }%>
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="admin-section">
-                <h3><i class="fas fa-chart-line"></i> System Overview</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Database Status</label>
-                        <p style="color: #28a745; font-weight: bold;">
-                            <i class="fas fa-check-circle"></i> Connected
-                        </p>
-                    </div>
-                    <div class="form-group">
-                        <label>System Version</label>
-                        <p><strong>iVote 1.0</strong></p>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Last Updated</label>
-                        <p><strong>Just now</strong></p>
-                    </div>
-                    <div class="form-group">
-                        <label>Admin Actions Today</label>
-                        <p><strong>0</strong></p>
-                    </div>
-                </div>
             </div>
         </main>
 

@@ -5,12 +5,12 @@
     Integer user_id = (Integer) session.getAttribute("user_id");
     String user_name = (String) session.getAttribute("user_name");
     String role = (String) session.getAttribute("role");
-    
+
     if (user_id == null || !"admin".equalsIgnoreCase(role)) {
         response.sendRedirect("login.jsp");
         return;
     }
-    
+
     // Get success/error messages
     String message = request.getParameter("message");
     String error = request.getParameter("error");
@@ -198,29 +198,26 @@
                 <h1><i class="fas fa-users"></i> Candidate List</h1>
                 <p>View and manage all registered candidates</p>
             </div>
-            
+
             <div class="navigation">
                 <a href="adminDashboard.jsp" class="nav-btn">
                     <i class="fas fa-arrow-left"></i> Back to Dashboard
                 </a>
-                <a href="addCandidate.jsp" class="nav-btn">
-                    <i class="fas fa-user-plus"></i> Add New Candidate
-                </a>
             </div>
-            
+
             <!-- Display Messages -->
             <% if (message != null && !message.isEmpty()) { %>
-                <div class="message success-message">
-                    <i class="fas fa-check-circle"></i> ${param.message}
-                </div>
+            <div class="message success-message">
+                <i class="fas fa-check-circle"></i> ${param.message}
+            </div>
             <% } %>
-            
+
             <% if (error != null && !error.isEmpty()) { %>
-                <div class="message error-message">
-                    <i class="fas fa-exclamation-triangle"></i> ${param.error}
-                </div>
-            <% } %>
-            
+            <div class="message error-message">
+                <i class="fas fa-exclamation-triangle"></i> ${param.error}
+            </div>
+            <% }%>
+
             <!-- Stats Card -->
             <div class="stats-card">
                 <div class="stats-content">
@@ -231,23 +228,7 @@
                     <i class="fas fa-chart-bar" style="font-size: 48px; opacity: 0.8;"></i>
                 </div>
             </div>
-            
-            <!-- Search and Filter -->
-            <div class="search-filter">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Search candidates by name, faculty, or email...">
-                </div>
-                <select class="filter-select" id="facultyFilter">
-                    <option value="">All Faculties</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Science">Science</option>
-                    <option value="Business">Business</option>
-                    <option value="Arts">Arts</option>
-                    <!-- Add more faculty options -->
-                </select>
-            </div>
-            
+
             <!-- Candidates Grid -->
             <div class="candidates-container">
                 <c:choose>
@@ -261,7 +242,7 @@
                                             <div class="candidate-id">ID: ${candidate.candidate_id}</div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="candidate-info">
                                         <div class="candidate-info-item">
                                             <i class="fas fa-university"></i>
@@ -278,16 +259,16 @@
                                             </div>
                                         </c:if>
                                     </div>
-                                    
+
                                     <c:if test="${not empty candidate.manifesto}">
                                         <div class="manifesto-preview" title="${candidate.manifesto}">
                                             <strong>Manifesto:</strong> 
                                             ${candidate.manifesto.length() > 150 ? 
-                                                candidate.manifesto.substring(0, 150) + '...' : 
-                                                candidate.manifesto}
+                                              candidate.manifesto.substring(0, 150) + '...' : 
+                                              candidate.manifesto}
                                         </div>
                                     </c:if>
-                                    
+
                                     <div class="candidate-actions">
                                         <a href="updateCandidate.jsp?candidate_id=${candidate.candidate_id}" 
                                            class="action-btn edit-btn">
@@ -315,28 +296,28 @@
                     </c:otherwise>
                 </c:choose>
             </div>
-            
+
             <script>
                 // Auto-hide messages after 5 seconds
-                setTimeout(function() {
+                setTimeout(function () {
                     var messages = document.querySelectorAll('.message');
-                    messages.forEach(function(msg) {
+                    messages.forEach(function (msg) {
                         msg.style.transition = 'opacity 0.5s';
                         msg.style.opacity = '0';
-                        setTimeout(function() {
+                        setTimeout(function () {
                             if (msg.parentNode) {
                                 msg.parentNode.removeChild(msg);
                             }
                         }, 500);
                     });
                 }, 5000);
-                
+
                 // Search functionality
-                document.getElementById('searchInput').addEventListener('keyup', function() {
+                document.getElementById('searchInput').addEventListener('keyup', function () {
                     var searchTerm = this.value.toLowerCase();
                     var cards = document.querySelectorAll('.candidate-card');
-                    
-                    cards.forEach(function(card) {
+
+                    cards.forEach(function (card) {
                         var text = card.textContent.toLowerCase();
                         if (text.includes(searchTerm)) {
                             card.style.display = 'block';
@@ -345,13 +326,13 @@
                         }
                     });
                 });
-                
+
                 // Filter by faculty
-                document.getElementById('facultyFilter').addEventListener('change', function() {
+                document.getElementById('facultyFilter').addEventListener('change', function () {
                     var selectedFaculty = this.value;
                     var cards = document.querySelectorAll('.candidate-card');
-                    
-                    cards.forEach(function(card) {
+
+                    cards.forEach(function (card) {
                         var faculty = card.getAttribute('data-faculty');
                         if (!selectedFaculty || faculty === selectedFaculty) {
                             card.style.display = 'block';
