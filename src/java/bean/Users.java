@@ -15,18 +15,31 @@ public class Users implements Serializable {
     private String email;
     private String role;
     private String status;
+    private String faculty;
 
     // No-argument constructor (required for JavaBean)
     public Users() {
     }
 
     // Constructor without ID (auto-generated)
-    public Users(String user_name, String password, String email, String role, String status) {
+    public Users(String user_name, String password, String email, String role, String status, String faculty) {
         this.user_name = user_name;
         this.password = password;
         this.email = email;
         this.role = role;
         this.status = status;
+        this.faculty = faculty;
+    }
+
+    // Constructor with all fields
+    public Users(int user_id, String user_name, String password, String email, String role, String status, String faculty) {
+        this.user_id = user_id;
+        this.user_name = user_name;
+        this.password = password;
+        this.email = email;
+        this.role = role;
+        this.status = status;
+        this.faculty = faculty;
     }
 
     // Getters and Setters
@@ -76,5 +89,29 @@ public class Users implements Serializable {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getFaculty() {
+        return faculty;
+    }
+
+    public void setFaculty(String faculty) {
+        this.faculty = faculty;
+    }
+
+    @Override
+    public String toString() {
+        return "Users{" + 
+                "user_id=" + user_id + 
+                ", user_name='" + user_name + '\'' + 
+                ", email='" + email + '\'' + 
+                ", role='" + role + '\'' + 
+                ", status='" + status + '\'' + 
+                ", faculty='" + faculty + '\'' + 
+                '}';
+    }
+
+    public void add(Users users) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

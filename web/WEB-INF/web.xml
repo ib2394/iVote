@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app version="3.1" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd">
-    
     <welcome-file-list>
         <welcome-file>login.jsp</welcome-file>
+        <!-- Change to HTML if JSP has issues -->
     </welcome-file-list>
-    
-    <!-- Servlet Definitions -->
+    <!-- Servlet Definitions (only the ones you HAVE) -->
     <servlet>
         <servlet-name>RegisterServlet</servlet-name>
         <servlet-class>controller.RegisterServlet</servlet-class>
@@ -27,14 +26,15 @@
         <servlet-class>controller.LogoutServlet</servlet-class>
     </servlet>
     <servlet>
-        <servlet-name>VotingServlet</servlet-name>
-        <servlet-class>controller.VotingServlet</servlet-class>
+        <servlet-name>ViewCandidatesServlet</servlet-name>
+        <servlet-class>controller.ViewCandidatesServlet</servlet-class>
     </servlet>
-    <servlet>
-        <servlet-name>AdminServlet</servlet-name>
-        <servlet-class>controller.AdminServlet</servlet-class>
-    </servlet>
+    <!-- Only include servlets you actually have! -->
     <!-- Servlet Mappings -->
+    <servlet>
+        <servlet-name>DeleteElectionServlet</servlet-name>
+        <servlet-class>controller.DeleteElectionServlet</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>RegisterServlet</servlet-name>
         <url-pattern>/RegisterServlet</url-pattern>
@@ -56,14 +56,14 @@
         <url-pattern>/LogoutServlet</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
-        <servlet-name>VotingServlet</servlet-name>
-        <url-pattern>/VotingServlet</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>AdminServlet</servlet-name>
-        <url-pattern>/AdminServlet</url-pattern>
+        <servlet-name>ViewCandidatesServlet</servlet-name>
+        <url-pattern>/viewCandidates</url-pattern>
     </servlet-mapping>
     <!-- Session Configuration -->
+    <servlet-mapping>
+        <servlet-name>DeleteElectionServlet</servlet-name>
+        <url-pattern>/DeleteElectionServlet</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>
             30

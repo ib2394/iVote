@@ -20,11 +20,11 @@ public class VoteDAO {
             return false;
         }
 
-        String query = "INSERT INTO Votes (user_id, candidate_id, position_id, vote_time) " +
-                       "VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
+        String query = "INSERT INTO Votes (user_id, candidate_id, position_id, vote_time) "
+                + "VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
 
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setInt(1, userId);
             pstmt.setInt(2, candidateId);
@@ -43,7 +43,7 @@ public class VoteDAO {
         String query = "SELECT COUNT(*) FROM Votes WHERE user_id = ? AND position_id = ?";
 
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setInt(1, userId);
             pstmt.setInt(2, positionId);
@@ -65,7 +65,7 @@ public class VoteDAO {
         String query = "SELECT COUNT(*) FROM Votes WHERE user_id = ?";
 
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setInt(1, userId);
 
@@ -85,10 +85,12 @@ public class VoteDAO {
         String query = "SELECT COUNT(*) FROM Votes";
 
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query);
-             ResultSet rs = pstmt.executeQuery()) {
+                PreparedStatement pstmt = conn.prepareStatement(query);
+                ResultSet rs = pstmt.executeQuery()) {
 
-            if (rs.next()) return rs.getInt(1);
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -105,15 +107,17 @@ public class VoteDAO {
     }
 
     public int getTotalVotesByElection(int electionId) {
-        String sql = "SELECT COUNT(*) FROM Votes v " +
-                     "JOIN Positions p ON v.position_id = p.position_id " +
-                     "WHERE p.election_id = ?";
+        String sql = "SELECT COUNT(*) FROM Votes v "
+                + "JOIN Positions p ON v.position_id = p.position_id "
+                + "WHERE p.election_id = ?";
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, electionId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -124,11 +128,13 @@ public class VoteDAO {
     public int getTotalVotesByPosition(int positionId) {
         String sql = "SELECT COUNT(*) FROM Votes WHERE position_id = ?";
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, positionId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getInt(1);
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -136,13 +142,38 @@ public class VoteDAO {
         return 0;
     }
 
-    // OPTIONAL: get a Vote record by id
-    public Vote getVoteById(int voteId) {
-        String query = "SELECT vote_id, user_id, candidate_id, position_id, vote_time " +
-                       "FROM Votes WHERE vote_id = ?";
+    public boolean hasVotedInElection(int userId, int electionId) {
+        String query = "SELECT COUNT(*) FROM VOTES v "
+                + // ← "VOTES", not "VOTE"
+                "JOIN CANDIDATES c ON v.CANDIDATE_ID = c.CANDIDATE_ID "
+                + "WHERE v.USER_ID = ? AND c.ELECTION_ID = ?";
 
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, electionId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt(1);
+                    System.out.println("DEBUG: User " + userId + " has " + count + " votes in election " + electionId);
+                    return count > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error in hasVotedInElection: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public Vote getVoteById(int voteId) {
+        String query = "SELECT vote_id, user_id, candidate_id, position_id, vote_time "
+                + "FROM Votes WHERE vote_id = ?";
+
+        try (Connection conn = DBConnection.createConnection();
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setInt(1, voteId);
 
@@ -164,4 +195,3 @@ public class VoteDAO {
         return null;
     }
 }
-

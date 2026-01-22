@@ -136,7 +136,7 @@
                 <form action="RegisterServlet" method="post">
 
                     <div class="form-group">
-                        <label>Full Name</label>
+                        <label>Username</label>
                         <input type="text" name="user_name" required>
                     </div>
 

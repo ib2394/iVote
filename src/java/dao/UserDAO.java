@@ -7,21 +7,18 @@ package dao;
 
 import bean.Users;
 import util.DBConnection;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.*;
 
 public class UserDAO {
 
     public Users authenticateUser(String email, String password) {
         Users user = null;
-        String query = "SELECT user_id, user_name, password, email, role, status " +
-                       "FROM Users WHERE email = ? AND password = ?";
+        String query = "SELECT user_id, user_name, password, email, role, status,faculty "
+                + "FROM Users WHERE email = ? AND password = ?";
 
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, email);
             pstmt.setString(2, password);
@@ -35,6 +32,7 @@ public class UserDAO {
                     user.setEmail(rs.getString("email"));
                     user.setRole(rs.getString("role"));
                     user.setStatus(rs.getString("status"));
+                    user.setStatus(rs.getString("faculty"));
                 }
             }
         } catch (SQLException e) {
@@ -44,11 +42,11 @@ public class UserDAO {
     }
 
     public boolean registerUser(Users user) {
-        String query = "INSERT INTO Users (user_name, password, email, role, status) " +
-                       "VALUES (?, ?, ?, ?, ?)";
+        String query = "INSERT INTO Users (user_name, password, email, role, status, faculty) "
+                + "VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, user.getUser_name());
             pstmt.setString(2, user.getPassword());
@@ -63,12 +61,11 @@ public class UserDAO {
         }
     }
 
-    // OPTIONAL: update status (since your bean has status)
     public boolean updateUserStatus(int userId, String status) {
         String query = "UPDATE Users SET status = ? WHERE user_id = ?";
 
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, status);
             pstmt.setInt(2, userId);
@@ -83,7 +80,7 @@ public class UserDAO {
     public int countByRole(String role) {
         String query = "SELECT COUNT(*) FROM Users WHERE role = ?";
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
+                PreparedStatement ps = conn.prepareStatement(query)) {
 
             ps.setString(1, role);
             try (ResultSet rs = ps.executeQuery()) {
@@ -98,10 +95,10 @@ public class UserDAO {
     }
 
     public Users getUserById(int userId) {
-        String query = "SELECT user_id, user_name, password, email, role, status " +
-                       "FROM Users WHERE user_id = ?";
+        String query = "SELECT user_id, user_name, password, email, role, status, faculty "
+                + "FROM Users WHERE user_id = ?";
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
+                PreparedStatement ps = conn.prepareStatement(query)) {
 
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -113,6 +110,7 @@ public class UserDAO {
                     user.setEmail(rs.getString("email"));
                     user.setRole(rs.getString("role"));
                     user.setStatus(rs.getString("status"));
+                    user.setFaculty(rs.getString("faculty"));
                     return user;
                 }
             }
@@ -123,11 +121,13 @@ public class UserDAO {
     }
 
     public Users getUserByEmail(String email) {
-        if (email == null) return null;
-        String query = "SELECT user_id, user_name, password, email, role, status " +
-                       "FROM Users WHERE email = ?";
+        if (email == null) {
+            return null;
+        }
+        String query = "SELECT user_id, user_name, password, email, role, status, faculty "
+                + "FROM Users WHERE email = ?";
         try (Connection conn = DBConnection.createConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
+                PreparedStatement ps = conn.prepareStatement(query)) {
 
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
@@ -139,6 +139,7 @@ public class UserDAO {
                     user.setEmail(rs.getString("email"));
                     user.setRole(rs.getString("role"));
                     user.setStatus(rs.getString("status"));
+                    user.setFaculty(rs.getString("faculty"));
                     return user;
                 }
             }
